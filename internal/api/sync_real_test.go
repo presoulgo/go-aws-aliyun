@@ -109,3 +109,14 @@ func TestAlibabaLoadBalancerScopesAreIndependent(t *testing.T) {
 		t.Fatalf("ALB scope was changed by CLB sync: %+v", resources)
 	}
 }
+
+func TestAlibabaUnavailableServiceEndpointIsSkipped(t *testing.T) {
+	task := syncTask{region: "eu-west-3", collector: "alb", resourceType: "lb"}
+	err := errors.New(`Post "https://alb.eu-west-3.aliyuncs.com/?MaxResults=100": EOF`)
+	if !unsupportedTask(model.CloudAccount{Provider: "aliyun"}, task, err) {
+		t.Fatal("Alibaba service endpoint EOF should be treated as an unsupported regional service")
+	}
+	if unsupportedTask(model.CloudAccount{Provider: "aws"}, task, err) {
+		t.Fatal("AWS transport EOF must not be hidden as an unsupported region")
+	}
+}

@@ -100,7 +100,7 @@ func (s *Server) runRealSync(ctx context.Context, j model.SyncJob, a model.Cloud
 			}
 			taskCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 			defer cancel()
-			resources, listErr := p.List(taskCtx, a, plain, task.region, task.collector)
+			resources, listErr := listWithRetry(taskCtx, p, a, plain, task)
 			result := syncResult{task: task, resources: resources, err: listErr}
 			if listErr == nil && task.resourceType == "vm" {
 				result.metrics = collectCPUMetrics(taskCtx, p, a, plain, resources, metricLimit)
@@ -127,7 +127,7 @@ func (s *Server) runRealSync(ctx context.Context, j model.SyncJob, a model.Cloud
 			if errors.Is(result.err, context.Canceled) && ctx.Err() != nil {
 				continue
 			}
-			if !unsupportedRegion(result.err) {
+			if !unsupportedTask(a, result.task, result.err) {
 				issues = append(issues, fmt.Sprintf("%s %s: %v", result.task.region, result.task.collector, result.err))
 			}
 			continue
@@ -175,6 +175,35 @@ func (s *Server) runRealSync(ctx context.Context, j model.SyncJob, a model.Cloud
 		}
 	}
 	s.finishSync(j, status, done, len(issues), strings.Join(issues, "\n"))
+}
+
+func listWithRetry(ctx context.Context, p cloud.Provider, account model.CloudAccount, plain string, task syncTask) ([]model.Resource, error) {
+	var resources []model.Resource
+	var err error
+	for attempt := 0; attempt < 3; attempt++ {
+		resources, err = p.List(ctx, account, plain, task.region, task.collector)
+		if err == nil || !transientCloudError(err) || attempt == 2 {
+			return resources, err
+		}
+		timer := time.NewTimer(time.Duration(attempt+1) * 500 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return resources, ctx.Err()
+		case <-timer.C:
+		}
+	}
+	return resources, err
+}
+
+func transientCloudError(err error) bool {
+	message := strings.ToLower(err.Error())
+	for _, marker := range []string{"eof", "connection reset", "connection refused", "timeout", "temporarily unavailable", "serverinternalerror", "serviceunavailable"} {
+		if strings.Contains(message, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func splitRegions(value string) []string {
@@ -262,6 +291,17 @@ func unsupportedRegion(err error) bool {
 		}
 	}
 	return false
+}
+
+func unsupportedTask(account model.CloudAccount, task syncTask, err error) bool {
+	if unsupportedRegion(err) {
+		return true
+	}
+	if account.Provider != "aliyun" || (task.collector != "rds" && task.collector != "clb" && task.collector != "alb") {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "aliyuncs.com") && strings.HasSuffix(strings.TrimSpace(message), "eof")
 }
 
 func (s *Server) saveTask(a model.CloudAccount, task syncTask, resources []model.Resource) error {

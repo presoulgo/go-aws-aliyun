@@ -48,6 +48,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic(err)
+	}
+	defer sqlDB.Close()
 	s := api.New(db, cfg)
 	password, err := s.EnsureAdmin()
 	if err != nil {
