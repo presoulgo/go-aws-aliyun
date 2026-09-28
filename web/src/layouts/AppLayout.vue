@@ -1,0 +1,33 @@
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuth } from '../stores/auth'
+import { get, put } from '../api'
+import { Search, DataAnalysis, Grid, TrendCharts, Connection, User, Document, ArrowDown } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+const auth=useAuth(),route=useRoute(),router=useRouter(),search=ref(''),sync=ref<any>({}),passwordOpen=ref(false),password=ref({old_password:'',new_password:''})
+let timer:any
+async function refresh(){try{sync.value=await get('/sync/status')}catch{}}
+function globalKey(e:KeyboardEvent){if(e.key==='/'&&!(e.target instanceof HTMLInputElement)){e.preventDefault();document.getElementById('global-search')?.focus()}}
+function goSearch(){if(search.value.trim())router.push({path:'/resources',query:{q:search.value.trim()}})}
+async function changePassword(){await put('/auth/password',password.value);ElMessage.success('密码已修改');passwordOpen.value=false;password.value={old_password:'',new_password:''}}
+onMounted(()=>{refresh();timer=setInterval(refresh,60000);window.addEventListener('keydown',globalKey)})
+onUnmounted(()=>{clearInterval(timer);window.removeEventListener('keydown',globalKey)})
+</script>
+<template>
+<div class="shell">
+  <aside class="sidebar">
+    <router-link to="/dashboard" class="brand"><span class="brand-mark">云</span><span><strong>云枢</strong><small>多云运维聚合平台</small></span></router-link>
+    <div class="side-label">主导航</div>
+    <router-link to="/dashboard" class="nav" :class="{active:route.path==='/dashboard'}"><el-icon><DataAnalysis/></el-icon>概览</router-link>
+    <router-link to="/resources" class="nav" :class="{active:route.path==='/resources'}"><el-icon><Grid/></el-icon>资源中心</router-link>
+    <router-link to="/monitor" class="nav" :class="{active:route.path==='/monitor'}"><el-icon><TrendCharts/></el-icon>监控中心</router-link>
+    <router-link to="/accounts" class="nav" :class="{active:route.path==='/accounts'}"><el-icon><Connection/></el-icon>云账号</router-link>
+    <template v-if="auth.admin"><div class="side-label system-label">系统管理</div><router-link to="/system/users" class="nav" :class="{active:route.path==='/system/users'}"><el-icon><User/></el-icon>用户管理</router-link><router-link to="/system/audit" class="nav" :class="{active:route.path==='/system/audit'}"><el-icon><Document/></el-icon>审计日志</router-link></template>
+    <div class="side-foot">v0.1.0　只读接入</div>
+  </aside>
+  <main class="main"><header class="topbar"><div class="global-search"><el-icon><Search/></el-icon><input id="global-search" v-model="search" placeholder="全局搜索资源" @keydown.enter="goSearch"><kbd>/</kbd></div><div class="top-right"><span v-if="auth.demo" class="demo-badge">演示模式</span><router-link to="/accounts" class="sync-pill"><i :class="sync.status"></i>{{sync.running?`同步中 · ${sync.running} 个任务`:sync.status==='partial'?'部分成功':sync.status==='failed'?'同步失败':'同步正常'}}</router-link><el-dropdown trigger="click"><button class="user-button"><span class="avatar">{{auth.user?.username?.[0]?.toUpperCase()}}</span><span class="user-info"><strong>{{auth.user?.username}}</strong><small>{{auth.admin?'管理员':'只读用户'}}</small></span><el-icon><ArrowDown/></el-icon></button><template #dropdown><el-dropdown-menu><el-dropdown-item @click="passwordOpen=true">修改密码</el-dropdown-item><el-dropdown-item divided @click="auth.logout()">退出登录</el-dropdown-item></el-dropdown-menu></template></el-dropdown></div></header><router-view/></main>
+  <el-dialog v-model="passwordOpen" title="修改密码" width="420px"><el-form label-position="top"><el-form-item label="当前密码"><el-input v-model="password.old_password" type="password" show-password/></el-form-item><el-form-item label="新密码（至少 10 位）"><el-input v-model="password.new_password" type="password" show-password/></el-form-item></el-form><template #footer><el-button @click="passwordOpen=false">取消</el-button><el-button type="primary" @click="changePassword">保存</el-button></template></el-dialog>
+</div>
+</template>
+<style scoped>.shell{display:flex;min-height:100vh}.sidebar{width:224px;flex:none;background:#fff;border-right:1px solid var(--border);height:100vh;position:sticky;top:0;display:flex;flex-direction:column;padding:24px 12px}.brand{display:flex;align-items:center;gap:10px;margin:0 10px 36px}.brand-mark{display:grid;place-items:center;width:36px;height:36px;border-radius:9px;background:var(--primary);color:white;font-weight:600;font-size:19px}.brand strong{display:block;font-size:19px;letter-spacing:1px}.brand small{display:block;color:var(--subtle);font-size:10px;margin-top:2px}.side-label{color:#9BA3B0;font-size:11px;margin:0 12px 9px;letter-spacing:.5px}.system-label{margin-top:28px}.nav{height:42px;display:flex;gap:12px;align-items:center;padding:0 14px;color:var(--muted);border-radius:8px;font-size:13px;margin:2px 0}.nav .el-icon{font-size:17px}.nav:hover{background:#F7F8FC}.nav.active{background:var(--primary-soft);color:var(--primary);font-weight:600}.side-foot{margin-top:auto;border-top:1px solid var(--divider);padding:18px 12px 0;color:#A0A7B2;font-size:11px}.main{min-width:0;flex:1}.topbar{height:64px;background:white;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;padding:0 32px}.global-search{width:290px;height:34px;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:8px;padding:0 10px;color:#9DA5B3}.global-search input{border:0;outline:none;flex:1;min-width:0;color:var(--text);font-size:12px}.global-search kbd{font-size:11px;border:1px solid var(--border);border-radius:4px;padding:0 5px}.top-right{display:flex;align-items:center;gap:16px}.demo-badge{font-size:11px;color:#A94600;background:#FDEEE2;padding:5px 8px;border-radius:5px}.sync-pill{font-size:12px;color:var(--muted);display:flex;gap:7px;align-items:center}.sync-pill i{width:6px;height:6px;background:#20A27C;border-radius:50%}.sync-pill i.partial{background:#DA982B}.sync-pill i.failed{background:#D94141}.user-button{border:0;background:transparent;display:flex;align-items:center;gap:9px;cursor:pointer;padding:0}.avatar{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#DDE5FF;color:var(--primary);font-weight:600}.user-info{text-align:left}.user-info strong{display:block;font-size:12px}.user-info small{display:block;color:var(--subtle);font-size:10px;margin-top:2px}@media(max-width:800px){.sidebar{width:60px;padding:20px 7px}.brand{margin:0 auto 25px}.brand span:last-child,.side-label,.nav:not(.active),.side-foot{display:none}.nav{justify-content:center;padding:0;font-size:0}.nav .el-icon{font-size:20px}.topbar{padding:0 14px}.global-search{width:180px}}</style>

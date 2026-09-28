@@ -1,0 +1,1 @@
+{"compilerOptions":{"target":"ES2022","useDefineForClassFields":true,"module":"ESNext","moduleResolution":"Bundler","strict":false,"jsx":"preserve","skipLibCheck":true,"resolveJsonModule":true,"isolatedModules":true,"noEmit":true,"allowImportingTsExtensions":true,"types":["vite/client"]},"include":["src/**/*.ts","src/**/*.vue"]}

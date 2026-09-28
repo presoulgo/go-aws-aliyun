@@ -1,0 +1,1 @@
+<script setup lang="ts">defineProps<{status:string}>();const labels:any={running:'运行中',stopped:'已停止',starting:'启动中',pending:'变更中',abnormal:'异常',success:'成功',partial:'部分成功',failed:'失败',cancelled:'已取消',expiring:'即将到期'}</script><template><span class="status" :class="status">{{labels[status]||status}}</span></template>

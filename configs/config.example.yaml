@@ -1,0 +1,12 @@
+app:
+  name: 云枢
+server:
+  address: ":8080"
+store:
+  path: data/ops.db
+idle:
+  cpu_threshold: 5
+expiring:
+  days: 30
+audit:
+  retention_days: 180
