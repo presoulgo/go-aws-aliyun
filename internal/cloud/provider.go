@@ -47,6 +47,13 @@ func Supports(r model.Resource, metric string) bool {
 	if metric == "qps" && (r.Spec == "NLB" || r.Spec == "CLB") {
 		return false
 	}
+	if r.Provider == "aws" && r.Type == "lb" && (metric == "network_in" || metric == "network_out") {
+		// ELB publishes total processed bytes, not separate inbound and outbound byte series.
+		return false
+	}
+	if r.Spec == "GWLB" && (metric == "qps" || metric == "connections") {
+		return false
+	}
 	for _, item := range Catalog {
 		if item["key"] != metric {
 			continue

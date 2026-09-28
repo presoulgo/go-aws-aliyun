@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/presoulgo/go-aws-aliyun/internal/model"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -18,7 +16,16 @@ func (s *Server) startSync(a model.CloudAccount, actor string) model.SyncJob {
 		s.mu.Unlock()
 		return existing
 	}
-	j := model.SyncJob{AccountID: a.ID, AccountName: a.Name, Provider: a.Provider, Status: "running", TriggeredBy: actor, TasksTotal: 9, StartedAt: time.Now()}
+	tasksTotal := 9
+	if !s.Config.Demo {
+		regions := splitRegions(a.Regions)
+		if len(regions) > 0 {
+			tasksTotal = len(tasksFor(a, regions))
+		} else {
+			tasksTotal = 0
+		}
+	}
+	j := model.SyncJob{AccountID: a.ID, AccountName: a.Name, Provider: a.Provider, Status: "running", TriggeredBy: actor, TasksTotal: tasksTotal, StartedAt: time.Now()}
 	s.DB.Create(&j)
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancels[j.ID] = cancel
@@ -106,7 +113,7 @@ func (s *Server) syncJobs(c *gin.Context) {
 }
 func (s *Server) syncStatus(c *gin.Context) {
 	var latest model.SyncJob
-	s.DB.Where("status <> ?", "running").Order("id desc").First(&latest)
+	s.DB.Where("status <> ?", "running").Order("id desc").Limit(1).Find(&latest)
 	var running int64
 	s.DB.Model(&model.SyncJob{}).Where("status = ?", "running").Count(&running)
 	status := "normal"
@@ -139,6 +146,3 @@ func (s *Server) Schedule(ctx context.Context) {
 		}
 	}
 }
-
-var _ = strconv.Itoa
-var _ = strings.TrimSpace

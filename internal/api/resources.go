@@ -10,6 +10,7 @@ import (
 	"github.com/presoulgo/go-aws-aliyun/internal/secret"
 	"gorm.io/gorm"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -34,7 +35,7 @@ func (s *Server) resourceQuery(c *gin.Context) *gorm.DB {
 		}
 	}
 	if c.Query("idle") == "1" {
-		q = q.Where("type = 'vm' AND status = 'running' AND cpu24_h < ?", s.Config.IdleCPU)
+		q = q.Where("type = 'vm' AND status = 'running' AND metrics_at IS NOT NULL AND cpu24_h < ?", s.Config.IdleCPU)
 	}
 	if c.Query("expiring") == "1" {
 		q = q.Where("expires_at BETWEEN ? AND ?", time.Now(), time.Now().AddDate(0, 0, s.Config.ExpiringDays))
@@ -97,7 +98,7 @@ func metricSpan(v string) time.Duration {
 		return 24 * time.Hour
 	}
 }
-func (s *Server) metric(r model.Resource, metric string, span time.Duration) cloud.Series {
+func (s *Server) metric(ctx context.Context, r model.Resource, metric string, span time.Duration) cloud.Series {
 	key := fmt.Sprintf("%d:%s:%s", r.ID, metric, span)
 	s.mu.Lock()
 	cached, ok := s.metricCache[key]
@@ -106,7 +107,9 @@ func (s *Server) metric(r model.Resource, metric string, span time.Duration) clo
 		return cached.value
 	}
 	var a model.CloudAccount
-	s.DB.First(&a, r.AccountID)
+	if err := s.DB.First(&a, r.AccountID).Error; err != nil {
+		return cloud.Series{ResourceID: r.ID, Metric: metric, Name: r.Name, Provider: r.Provider, Error: "云账号不存在"}
+	}
 	plain := ""
 	if !s.Config.Demo {
 		var err error
@@ -115,11 +118,16 @@ func (s *Server) metric(r model.Resource, metric string, span time.Duration) clo
 			return cloud.Series{ResourceID: r.ID, Name: r.Name, Provider: r.Provider, Error: err.Error()}
 		}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	result, err := s.provider(r.Provider).Metrics(ctx, a, plain, r, metric, span)
+	provider := s.provider(r.Provider)
+	if provider == nil {
+		return cloud.Series{ResourceID: r.ID, Metric: metric, Name: r.Name, Provider: r.Provider, Error: "不支持的云厂商"}
+	}
+	result, err := provider.Metrics(ctx, a, plain, r, metric, span)
 	if err != nil {
 		result.Error = err.Error()
+		return result
 	}
 	s.mu.Lock()
 	s.metricCache[key] = cachedMetric{value: result, until: time.Now().Add(2 * time.Minute)}
@@ -143,9 +151,16 @@ func (s *Server) resourceMetrics(c *gin.Context) {
 		metrics = []string{"storage"}
 	}
 	out := make([]cloud.Series, 0, len(metrics))
-	for _, m := range metrics {
-		out = append(out, s.metric(r, m, metricSpan(c.DefaultQuery("range", "24h"))))
+	out = make([]cloud.Series, len(metrics))
+	var workers sync.WaitGroup
+	for index, metric := range metrics {
+		workers.Add(1)
+		go func(index int, metric string) {
+			defer workers.Done()
+			out[index] = s.metric(c.Request.Context(), r, metric, metricSpan(c.DefaultQuery("range", "24h")))
+		}(index, metric)
 	}
+	workers.Wait()
 	c.JSON(200, gin.H{"items": out})
 }
 func (s *Server) metricsQuery(c *gin.Context) {
@@ -160,14 +175,25 @@ func (s *Server) metricsQuery(c *gin.Context) {
 	}
 	var resources []model.Resource
 	s.DB.Where("id IN ?", in.IDs).Find(&resources)
-	out := make([]cloud.Series, 0, len(resources))
-	for _, id := range in.IDs {
-		for _, r := range resources {
-			if r.ID == id {
-				out = append(out, s.metric(r, in.Metric, metricSpan(in.Range)))
-			}
-		}
+	byID := make(map[uint]model.Resource, len(resources))
+	for _, resource := range resources {
+		byID[resource.ID] = resource
 	}
+	out := make([]cloud.Series, len(in.IDs))
+	var workers sync.WaitGroup
+	for index, resourceID := range in.IDs {
+		resource, exists := byID[resourceID]
+		if !exists {
+			out[index] = cloud.Series{ResourceID: resourceID, Metric: in.Metric, Error: "资源不存在"}
+			continue
+		}
+		workers.Add(1)
+		go func(index int, resource model.Resource) {
+			defer workers.Done()
+			out[index] = s.metric(c.Request.Context(), resource, in.Metric, metricSpan(in.Range))
+		}(index, resource)
+	}
+	workers.Wait()
 	c.JSON(200, gin.H{"items": out})
 }
 
@@ -192,7 +218,7 @@ func (s *Server) summary(c *gin.Context) {
 	rq().Count(&resources)
 	rq().Where("type = 'vm'").Count(&totalVM)
 	rq().Where("type = 'vm' AND status = 'running'").Count(&running)
-	rq().Where("type = 'vm' AND status = 'running' AND cpu24_h < ?", s.Config.IdleCPU).Count(&idle)
+	rq().Where("type = 'vm' AND status = 'running' AND metrics_at IS NOT NULL AND cpu24_h < ?", s.Config.IdleCPU).Count(&idle)
 	rq().Where("expires_at BETWEEN ? AND ?", time.Now(), time.Now().AddDate(0, 0, s.Config.ExpiringDays)).Count(&expiring)
 	var distribution []struct {
 		Provider string `json:"provider"`

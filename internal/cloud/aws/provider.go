@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	base "github.com/aws/aws-sdk-go-v2/aws"
@@ -20,10 +21,13 @@ import (
 	"github.com/presoulgo/go-aws-aliyun/internal/model"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
 type Provider struct{}
+
+var roleProviders sync.Map
 
 func cfg(ctx context.Context, a model.CloudAccount, secret, region string) (base.Config, error) {
 	if region == "" {
@@ -34,7 +38,12 @@ func cfg(ctx context.Context, a model.CloudAccount, secret, region string) (base
 		return c, err
 	}
 	if a.RoleARN != "" {
-		c.Credentials = base.NewCredentialsCache(stscreds.NewAssumeRoleProvider(sts.NewFromConfig(c), a.RoleARN))
+		key := fmt.Sprintf("%d:%s:%s:%x", a.ID, a.AccessKeyID, a.RoleARN, sha256.Sum256([]byte(secret)))
+		candidate := base.NewCredentialsCache(stscreds.NewAssumeRoleProvider(sts.NewFromConfig(c), a.RoleARN, func(options *stscreds.AssumeRoleOptions) {
+			options.RoleSessionName = "yunshu-readonly"
+		}))
+		provider, _ := roleProviders.LoadOrStore(key, candidate)
+		c.Credentials = provider.(base.CredentialsProvider)
 	}
 	return c, nil
 }
@@ -128,8 +137,9 @@ func (Provider) List(ctx context.Context, a model.CloudAccount, secret, region, 
 			}
 		}
 		info := map[string]struct {
-			cpu    int
-			memory float64
+			cpu     int
+			memory  float64
+			network string
 		}{}
 		for start := 0; start < len(types); start += 100 {
 			end := min(start+100, len(types))
@@ -139,14 +149,18 @@ func (Provider) List(ctx context.Context, a model.CloudAccount, secret, region, 
 			}
 			for _, v := range resp.InstanceTypes {
 				size := struct {
-					cpu    int
-					memory float64
+					cpu     int
+					memory  float64
+					network string
 				}{}
 				if v.VCpuInfo != nil {
 					size.cpu = int(base.ToInt32(v.VCpuInfo.DefaultVCpus))
 				}
 				if v.MemoryInfo != nil {
 					size.memory = float64(base.ToInt64(v.MemoryInfo.SizeInMiB)) / 1024
+				}
+				if v.NetworkInfo != nil {
+					size.network = base.ToString(v.NetworkInfo.NetworkPerformance)
 				}
 				info[string(v.InstanceType)] = size
 			}
@@ -155,6 +169,10 @@ func (Provider) List(ctx context.Context, a model.CloudAccount, secret, region, 
 			if size, ok := info[out[i].Spec]; ok {
 				out[i].VCPU = size.cpu
 				out[i].MemoryGB = size.memory
+				metadata := map[string]any{}
+				_ = json.Unmarshal([]byte(out[i].Extra), &metadata)
+				metadata["network_performance"] = size.network
+				out[i].Extra = extra(metadata)
 			}
 		}
 	case "rds":
@@ -183,7 +201,16 @@ func (Provider) List(ctx context.Context, a model.CloudAccount, secret, region, 
 				if v.State != nil {
 					state = string(v.State.Code)
 				}
-				out = append(out, model.Resource{Provider: "aws", Type: "lb", Region: region, CloudID: base.ToString(v.LoadBalancerArn), Name: base.ToString(v.LoadBalancerName), Status: status(state), Spec: strings.ToUpper(string(v.Type)), Tags: "{}", Extra: extra(map[string]any{"dns": base.ToString(v.DNSName), "scheme": v.Scheme, "vpc": base.ToString(v.VpcId)})})
+				spec := strings.ToUpper(string(v.Type))
+				switch spec {
+				case "APPLICATION":
+					spec = "ALB"
+				case "NETWORK":
+					spec = "NLB"
+				case "GATEWAY":
+					spec = "GWLB"
+				}
+				out = append(out, model.Resource{Provider: "aws", Type: "lb", Region: region, CloudID: base.ToString(v.LoadBalancerArn), Name: base.ToString(v.LoadBalancerName), Status: status(state), Spec: spec, Tags: "{}", Extra: extra(map[string]any{"dns": base.ToString(v.DNSName), "scheme": v.Scheme, "vpc": base.ToString(v.VpcId)})})
 			}
 		}
 	case "oss":
@@ -194,65 +221,45 @@ func (Provider) List(ctx context.Context, a model.CloudAccount, secret, region, 
 		}
 		for _, v := range page.Buckets {
 			name := base.ToString(v.Name)
-			out = append(out, model.Resource{Provider: "aws", Type: "oss", Region: "global", CloudID: name, Name: name, Status: "running", Spec: "S3", Tags: "{}", Extra: extra(map[string]any{"created_at": v.CreationDate})})
+			bucketRegion := "us-east-1"
+			location, locationErr := client.GetBucketLocation(ctx, &s3.GetBucketLocationInput{Bucket: base.String(name)})
+			if locationErr == nil {
+				bucketRegion = string(location.LocationConstraint)
+				if bucketRegion == "" {
+					bucketRegion = "us-east-1"
+				} else if bucketRegion == "EU" {
+					bucketRegion = "eu-west-1"
+				}
+			}
+			metadata := map[string]any{"created_at": v.CreationDate, "location": bucketRegion}
+			if locationErr != nil {
+				metadata["location_error"] = locationErr.Error()
+				bucketRegion = region
+			}
+			out = append(out, model.Resource{Provider: "aws", Type: "oss", Region: bucketRegion, CloudID: name, Name: name, Status: "running", Spec: "S3", Tags: "{}", Extra: extra(metadata)})
 		}
 	}
 	return out, nil
 }
 func (Provider) Metrics(ctx context.Context, a model.CloudAccount, secret string, r model.Resource, metric string, span time.Duration) (cloud.Series, error) {
-	s := cloud.Series{ResourceID: r.ID, Metric: metric, Name: r.Name, Provider: r.Provider, Supported: cloud.Supports(r, metric), Points: []cloud.Point{}}
-	if !s.Supported {
-		return s, nil
-	}
-	namespace, name, dimension := "AWS/EC2", "CPUUtilization", "InstanceId"
-	s.Unit = "%"
-	switch r.Type {
-	case "rds":
-		namespace = "AWS/RDS"
-		dimension = "DBInstanceIdentifier"
-	case "lb":
-		namespace = "AWS/ApplicationELB"
-		if r.Spec == "NLB" {
-			namespace = "AWS/NetworkELB"
-		}
-		dimension = "LoadBalancer"
-	case "oss":
-		namespace = "AWS/S3"
-		dimension = "BucketName"
-	}
-	switch metric {
-	case "network_in":
-		name = "NetworkIn"
-		s.Unit = "Byte/s"
-	case "network_out":
-		name = "NetworkOut"
-		s.Unit = "Byte/s"
-	case "connections":
-		name = "DatabaseConnections"
-		if r.Type == "lb" {
-			name = "ActiveConnectionCount"
-			if r.Spec == "NLB" {
-				name = "ActiveFlowCount"
-			}
-		}
-		s.Unit = "个"
-	case "qps":
-		name = "RequestCount"
-		s.Unit = "次/s"
-	case "storage":
-		name = "FreeStorageSpace"
-		if r.Type == "oss" {
-			name = "BucketSizeBytes"
-		}
-		s.Unit = "GB"
-	case "memory":
-		s.Supported = false
-		return s, nil
+	series := cloud.Series{ResourceID: r.ID, Metric: metric, Name: r.Name, Provider: r.Provider, Supported: cloud.Supports(r, metric), Points: []cloud.Point{}}
+	if !series.Supported {
+		return series, nil
 	}
 	c, err := cfg(ctx, a, secret, r.Region)
 	if err != nil {
-		return s, err
+		return series, err
 	}
+	client := cloudwatch.NewFromConfig(c)
+	if r.Type == "oss" && metric == "storage" {
+		return s3StorageSeries(ctx, client, series, r.CloudID, span)
+	}
+	namespace, name, dimension, unit, statistic := awsMetric(r, metric)
+	if name == "" {
+		series.Supported = false
+		return series, nil
+	}
+	series.Unit = unit
 	period := int32(300)
 	if span > 24*time.Hour {
 		period = 3600
@@ -266,34 +273,133 @@ func (Provider) Metrics(ctx context.Context, a model.CloudAccount, secret string
 		}
 	}
 	dimensions := []ct.Dimension{{Name: base.String(dimension), Value: base.String(v)}}
-	if r.Type == "oss" {
-		dimensions = append(dimensions, ct.Dimension{Name: base.String("StorageType"), Value: base.String("StandardStorage")})
-		period = 86400
-	}
-	resp, err := cloudwatch.NewFromConfig(c).GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{Namespace: base.String(namespace), MetricName: base.String(name), Dimensions: dimensions, StartTime: &start, EndTime: &end, Period: &period, Statistics: []ct.Statistic{ct.StatisticAverage}})
+	resp, err := client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{Namespace: base.String(namespace), MetricName: base.String(name), Dimensions: dimensions, StartTime: &start, EndTime: &end, Period: &period, Statistics: []ct.Statistic{statistic}})
 	if err != nil {
-		return s, err
+		return series, err
 	}
 	for _, p := range resp.Datapoints {
 		value := base.ToFloat64(p.Average)
-		if s.Unit == "Byte/s" || s.Unit == "次/s" {
+		if statistic == ct.StatisticSum {
+			value = base.ToFloat64(p.Sum)
+		}
+		if statistic == ct.StatisticSum && (series.Unit == "Byte/s" || series.Unit == "次/s") {
 			value /= float64(period)
 		}
-		if s.Unit == "GB" {
+		if series.Unit == "GB" {
 			value /= 1024 * 1024 * 1024
 		}
-		s.Points = append(s.Points, cloud.Point{Time: *p.Timestamp, Value: value})
-		s.Average += value
-		if value > s.Max {
-			s.Max = value
+		if p.Timestamp == nil {
+			continue
+		}
+		series.Points = append(series.Points, cloud.Point{Time: *p.Timestamp, Value: value})
+		series.Average += value
+		if value > series.Max {
+			series.Max = value
 		}
 	}
-	sort.Slice(s.Points, func(i, j int) bool { return s.Points[i].Time.Before(s.Points[j].Time) })
-	if len(s.Points) > 0 {
-		s.Average /= float64(len(s.Points))
-		s.Current = s.Points[len(s.Points)-1].Value
+	sort.Slice(series.Points, func(i, j int) bool { return series.Points[i].Time.Before(series.Points[j].Time) })
+	if len(series.Points) > 0 {
+		series.Average /= float64(len(series.Points))
+		series.Current = series.Points[len(series.Points)-1].Value
 	}
-	return s, nil
+	return series, nil
 }
 
-var _ = fmt.Sprint
+func awsMetric(resource model.Resource, metric string) (namespace, name, dimension, unit string, statistic ct.Statistic) {
+	unit, statistic = "%", ct.StatisticAverage
+	switch resource.Type {
+	case "vm":
+		namespace, dimension = "AWS/EC2", "InstanceId"
+		switch metric {
+		case "cpu":
+			name = "CPUUtilization"
+		case "network_in":
+			name, unit, statistic = "NetworkIn", "Byte/s", ct.StatisticSum
+		case "network_out":
+			name, unit, statistic = "NetworkOut", "Byte/s", ct.StatisticSum
+		}
+	case "rds":
+		namespace, dimension = "AWS/RDS", "DBInstanceIdentifier"
+		switch metric {
+		case "cpu":
+			name = "CPUUtilization"
+		case "connections":
+			name, unit = "DatabaseConnections", "个"
+		case "storage":
+			name, unit = "FreeStorageSpace", "GB"
+		}
+	case "lb":
+		dimension, unit = "LoadBalancer", "个"
+		if resource.Spec == "NLB" {
+			namespace = "AWS/NetworkELB"
+			if metric == "connections" {
+				name = "ActiveFlowCount"
+			}
+		} else if resource.Spec == "ALB" {
+			namespace = "AWS/ApplicationELB"
+			switch metric {
+			case "connections":
+				name = "ActiveConnectionCount"
+			case "qps":
+				name, unit, statistic = "RequestCount", "次/s", ct.StatisticSum
+			}
+		}
+	}
+	return namespace, name, dimension, unit, statistic
+}
+
+func s3StorageSeries(ctx context.Context, client *cloudwatch.Client, series cloud.Series, bucket string, span time.Duration) (cloud.Series, error) {
+	storageTypes := []string{
+		"StandardStorage", "StandardIAStorage", "StandardIASizeOverhead", "StandardIAObjectOverhead",
+		"OneZoneIAStorage", "OneZoneIASizeOverhead", "IntelligentTieringFAStorage", "IntelligentTieringIAStorage",
+		"IntelligentTieringAAStorage", "IntelligentTieringAIAStorage", "IntelligentTieringDAAStorage",
+		"GlacierStorage", "GlacierStagingStorage", "GlacierObjectOverhead", "GlacierS3ObjectOverhead",
+		"DeepArchiveStorage", "DeepArchiveStagingStorage", "DeepArchiveObjectOverhead", "DeepArchiveS3ObjectOverhead",
+		"GlacierInstantRetrievalStorage", "GlacierIRSizeOverhead", "ReducedRedundancyStorage",
+	}
+	queries := make([]ct.MetricDataQuery, 0, len(storageTypes))
+	for index, storageType := range storageTypes {
+		queries = append(queries, ct.MetricDataQuery{
+			Id: base.String(fmt.Sprintf("storage%d", index)),
+			MetricStat: &ct.MetricStat{
+				Metric: &ct.Metric{Namespace: base.String("AWS/S3"), MetricName: base.String("BucketSizeBytes"), Dimensions: []ct.Dimension{
+					{Name: base.String("BucketName"), Value: base.String(bucket)},
+					{Name: base.String("StorageType"), Value: base.String(storageType)},
+				}},
+				Period: base.Int32(86400), Stat: base.String("Average"),
+			},
+			ReturnData: base.Bool(true),
+		})
+	}
+	end := time.Now()
+	if span < 72*time.Hour {
+		span = 72 * time.Hour
+	}
+	start := end.Add(-span)
+	response, err := client.GetMetricData(ctx, &cloudwatch.GetMetricDataInput{MetricDataQueries: queries, StartTime: &start, EndTime: &end, ScanBy: ct.ScanByTimestampAscending})
+	if err != nil {
+		return series, err
+	}
+	values := map[time.Time]float64{}
+	for _, result := range response.MetricDataResults {
+		for index, timestamp := range result.Timestamps {
+			if index < len(result.Values) {
+				values[timestamp] += result.Values[index] / (1024 * 1024 * 1024)
+			}
+		}
+	}
+	series.Unit = "GB"
+	for timestamp, value := range values {
+		series.Points = append(series.Points, cloud.Point{Time: timestamp, Value: value})
+		series.Average += value
+		if value > series.Max {
+			series.Max = value
+		}
+	}
+	sort.Slice(series.Points, func(i, j int) bool { return series.Points[i].Time.Before(series.Points[j].Time) })
+	if len(series.Points) > 0 {
+		series.Average /= float64(len(series.Points))
+		series.Current = series.Points[len(series.Points)-1].Value
+	}
+	return series, nil
+}

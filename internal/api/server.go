@@ -32,6 +32,7 @@ type Server struct {
 	cancels        map[uint]context.CancelFunc
 	accountRunning map[uint]uint
 	metricCache    map[string]cachedMetric
+	providers      map[string]cloud.Provider
 }
 
 func New(db *gorm.DB, cfg config.Config) *Server {
@@ -42,17 +43,19 @@ func New(db *gorm.DB, cfg config.Config) *Server {
 		key = hex.EncodeToString(b)
 	}
 	db.Model(&model.SyncJob{}).Where("status = ?", "running").Updates(map[string]any{"status": "cancelled", "errors": "服务重启", "finished_at": time.Now()})
-	return &Server{DB: db, Config: cfg, TokenKey: []byte(key), cancels: map[uint]context.CancelFunc{}, accountRunning: map[uint]uint{}, metricCache: map[string]cachedMetric{}}
+	providers := map[string]cloud.Provider{
+		"aws":    awscloud.Provider{},
+		"aliyun": aliyuncloud.Provider{},
+	}
+	if cfg.Demo {
+		providers["aws"] = demo.Provider{}
+		providers["aliyun"] = demo.Provider{}
+	}
+	return &Server{DB: db, Config: cfg, TokenKey: []byte(key), cancels: map[uint]context.CancelFunc{}, accountRunning: map[uint]uint{}, metricCache: map[string]cachedMetric{}, providers: providers}
 }
 
 func (s *Server) provider(name string) cloud.Provider {
-	if s.Config.Demo {
-		return demo.Provider{}
-	}
-	if name == "aws" {
-		return awscloud.Provider{}
-	}
-	return aliyuncloud.Provider{}
+	return s.providers[name]
 }
 
 func (s *Server) Router(static http.Handler) *gin.Engine {
@@ -260,12 +263,12 @@ func (s *Server) users(c *gin.Context) {
 }
 func (s *Server) createUser(c *gin.Context) {
 	var in struct{ Username, Password, Role string }
-	if c.ShouldBindJSON(&in) != nil || len(in.Password) < 10 || !(in.Role == "admin" || in.Role == "viewer") {
+	if c.ShouldBindJSON(&in) != nil || strings.TrimSpace(in.Username) == "" || len(in.Password) < 10 || !(in.Role == "admin" || in.Role == "viewer") {
 		fail(c, 400, "用户名、角色和至少 10 位密码必填")
 		return
 	}
 	h, _ := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
-	u := model.User{Username: in.Username, PasswordHash: string(h), Role: in.Role, Enabled: true}
+	u := model.User{Username: strings.TrimSpace(in.Username), PasswordHash: string(h), Role: in.Role, Enabled: true}
 	if err := s.DB.Create(&u).Error; err != nil {
 		fail(c, 409, "用户名已存在")
 		return
@@ -341,7 +344,9 @@ func (s *Server) auditLogs(c *gin.Context) {
 	q := s.DB.Model(&model.AuditLog{})
 	switch c.Query("range") {
 	case "today":
-		q = q.Where("created_at >= ?", time.Now().Truncate(24*time.Hour))
+		now := time.Now()
+		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		q = q.Where("created_at >= ?", start)
 	case "7d":
 		q = q.Where("created_at >= ?", time.Now().AddDate(0, 0, -7))
 	case "30d":
@@ -379,9 +384,20 @@ func (s *Server) accounts(c *gin.Context) {
 		s.DB.Model(&model.Resource{}).Where("account_id = ?", a.ID).Count(&count)
 		var j model.SyncJob
 		s.DB.Where("account_id = ?", a.ID).Order("id desc").First(&j)
-		out = append(out, gin.H{"id": a.ID, "name": a.Name, "provider": a.Provider, "partition": a.Partition, "credential_type": a.CredentialType, "uid": a.UID, "access_key_id": mask(a.AccessKeyID), "role_arn": a.RoleARN, "regions": a.Regions, "auto_regions": a.AutoRegions, "note": a.Note, "enabled": a.Enabled, "resource_count": count, "last_job": j})
+		item := publicAccount(a)
+		item["resource_count"] = count
+		item["last_job"] = j
+		out = append(out, item)
 	}
 	c.JSON(200, gin.H{"items": out, "total": len(out)})
+}
+func publicAccount(a model.CloudAccount) gin.H {
+	return gin.H{
+		"id": a.ID, "name": a.Name, "provider": a.Provider, "partition": a.Partition,
+		"credential_type": a.CredentialType, "uid": a.UID, "access_key_id": mask(a.AccessKeyID),
+		"role_arn": a.RoleARN, "regions": a.Regions, "auto_regions": a.AutoRegions,
+		"note": a.Note, "enabled": a.Enabled, "created_at": a.CreatedAt, "updated_at": a.UpdatedAt,
+	}
 }
 func mask(v string) string {
 	if len(v) <= 4 {
@@ -453,6 +469,10 @@ func (s *Server) createAccount(c *gin.Context) {
 		fail(c, 400, "Secret 必填")
 		return
 	}
+	if !s.Config.Demo && in.AccessKeyID == "" {
+		fail(c, 400, "AccessKey ID 必填")
+		return
+	}
 	enc := ""
 	if in.Secret != "" {
 		var err error
@@ -462,7 +482,14 @@ func (s *Server) createAccount(c *gin.Context) {
 			return
 		}
 	}
-	a := model.CloudAccount{Name: in.Name, Provider: in.Provider, Partition: in.Partition, CredentialType: in.CredentialType, AccessKeyID: in.AccessKeyID, SecretEncrypted: enc, RoleARN: in.RoleARN, Regions: in.Regions, AutoRegions: in.AutoRegions, Note: in.Note, Enabled: true}
+	credentialType := in.CredentialType
+	if credentialType == "" {
+		credentialType = "access_key"
+		if in.RoleARN != "" {
+			credentialType = "role"
+		}
+	}
+	a := model.CloudAccount{Name: strings.TrimSpace(in.Name), Provider: in.Provider, Partition: in.Partition, CredentialType: credentialType, AccessKeyID: strings.TrimSpace(in.AccessKeyID), SecretEncrypted: enc, RoleARN: strings.TrimSpace(in.RoleARN), Regions: strings.Join(splitRegions(in.Regions), ","), AutoRegions: in.AutoRegions, Note: strings.TrimSpace(in.Note), Enabled: true}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
 	defer cancel()
 	identity, err := s.provider(in.Provider).Validate(ctx, a, in.Secret)
@@ -479,7 +506,11 @@ func (s *Server) createAccount(c *gin.Context) {
 		return
 	}
 	s.log(c, "account", "create", "success", a.Name, "")
-	c.JSON(201, a)
+	job := s.startSync(a, user(c).Username)
+	s.log(c, "sync", "start", "success", a.Name, fmt.Sprint(job.ID))
+	result := publicAccount(a)
+	result["sync_job"] = job
+	c.JSON(201, result)
 }
 func (s *Server) updateAccount(c *gin.Context) {
 	a, ok := s.account(c)
@@ -502,8 +533,15 @@ func (s *Server) updateAccount(c *gin.Context) {
 		a.AccessKeyID = in.AccessKeyID
 	}
 	a.RoleARN = in.RoleARN
+	if in.CredentialType != "" {
+		a.CredentialType = in.CredentialType
+	} else if a.RoleARN != "" {
+		a.CredentialType = "role"
+	} else {
+		a.CredentialType = "access_key"
+	}
 	if in.Regions != "" {
-		a.Regions = in.Regions
+		a.Regions = strings.Join(splitRegions(in.Regions), ",")
 	}
 	a.AutoRegions = in.AutoRegions
 	a.Note = in.Note
@@ -550,7 +588,7 @@ func (s *Server) updateAccount(c *gin.Context) {
 		changes = append(changes, "Secret 已更换")
 	}
 	s.log(c, "account", "update", "success", a.Name, strings.Join(changes, "; "))
-	c.JSON(200, a)
+	c.JSON(200, publicAccount(a))
 }
 func (s *Server) patchAccount(c *gin.Context) {
 	a, ok := s.account(c)
@@ -565,20 +603,46 @@ func (s *Server) patchAccount(c *gin.Context) {
 		return
 	}
 	a.Enabled = in.Enabled
-	s.DB.Save(&a)
+	if err := s.DB.Save(&a).Error; err != nil {
+		fail(c, 500, "保存失败")
+		return
+	}
+	if !in.Enabled {
+		s.mu.Lock()
+		jobID := s.accountRunning[a.ID]
+		cancel := s.cancels[jobID]
+		s.mu.Unlock()
+		if cancel != nil {
+			cancel()
+		}
+	}
 	s.log(c, "account", "toggle", "success", a.Name, fmt.Sprint(in.Enabled))
-	c.JSON(200, a)
+	c.JSON(200, publicAccount(a))
 }
 func (s *Server) deleteAccount(c *gin.Context) {
 	a, ok := s.account(c)
 	if !ok {
 		return
 	}
-	s.DB.Transaction(func(tx *gorm.DB) error {
-		tx.Where("account_id = ?", a.ID).Delete(&model.Resource{})
-		tx.Where("account_id = ?", a.ID).Delete(&model.HostCPUHourly{})
+	s.mu.Lock()
+	runningJob := s.accountRunning[a.ID]
+	s.mu.Unlock()
+	if runningJob != 0 {
+		fail(c, http.StatusConflict, "账号正在同步，请先取消同步任务")
+		return
+	}
+	if err := s.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("account_id = ?", a.ID).Delete(&model.Resource{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("account_id = ?", a.ID).Delete(&model.HostCPUHourly{}).Error; err != nil {
+			return err
+		}
 		return tx.Delete(&a).Error
-	})
+	}); err != nil {
+		fail(c, 500, "删除失败")
+		return
+	}
 	s.log(c, "account", "delete", "success", a.Name, "")
 	c.JSON(200, gin.H{"ok": true})
 }
