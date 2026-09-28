@@ -2,6 +2,7 @@ package api
 
 import (
 	"io/fs"
+	"mime"
 	"net/http"
 	"path"
 	"strings"
@@ -42,6 +43,9 @@ func spaHandler(files fs.FS) gin.HandlerFunc {
 				if strings.HasPrefix(name, "assets/") {
 					c.Header("Cache-Control", "public, max-age=31536000, immutable")
 				}
+				if serveGzip(c, files, name) {
+					return
+				}
 				fileServer.ServeHTTP(c.Writer, c.Request)
 				return
 			}
@@ -58,4 +62,37 @@ func spaHandler(files fs.FS) gin.HandlerFunc {
 		c.Header("Cache-Control", "no-cache")
 		c.Data(http.StatusOK, "text/html; charset=utf-8", index)
 	}
+}
+
+// serveGzip sends the pre-compressed name+".gz" written by the web build when
+// the browser accepts gzip. It reports whether the response was written.
+func serveGzip(c *gin.Context, files fs.FS, name string) bool {
+	gz, err := fs.ReadFile(files, name+".gz")
+	if err != nil {
+		return false
+	}
+	c.Header("Vary", "Accept-Encoding")
+	if !acceptsGzip(c.GetHeader("Accept-Encoding")) {
+		return false
+	}
+	ctype := mime.TypeByExtension(path.Ext(name))
+	if ctype == "" {
+		ctype = "application/octet-stream"
+	}
+	c.Header("Content-Encoding", "gzip")
+	c.Data(http.StatusOK, ctype, gz)
+	return true
+}
+
+func acceptsGzip(header string) bool {
+	for _, part := range strings.Split(header, ",") {
+		enc, params, _ := strings.Cut(strings.TrimSpace(part), ";")
+		if !strings.EqualFold(strings.TrimSpace(enc), "gzip") {
+			continue
+		}
+		// "gzip;q=0" explicitly refuses the encoding.
+		q := strings.ReplaceAll(strings.TrimSpace(params), " ", "")
+		return q != "q=0" && q != "q=0.0" && q != "q=0.00" && q != "q=0.000"
+	}
+	return false
 }

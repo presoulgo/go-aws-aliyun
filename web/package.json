@@ -1,0 +1,35 @@
+{
+  "name": "yunshu-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "vue-tsc --build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "axios": "^1.20.0",
+    "dayjs": "^1.11.23",
+    "echarts": "^6.1.0",
+    "element-plus": "^2.14.6",
+    "pinia": "^4.0.3",
+    "vue": "^3.5.43",
+    "vue-echarts": "^8.3.0",
+    "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vue/tsconfig": "^0.9.1",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.1",
+    "vue-tsc": "^3.3.11"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

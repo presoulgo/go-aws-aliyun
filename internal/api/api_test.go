@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -46,9 +47,14 @@ func newTestEnv(t *testing.T) *testEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var gz bytes.Buffer
+	zw := gzip.NewWriter(&gz)
+	_, _ = zw.Write([]byte("console.log(1)"))
+	_ = zw.Close()
 	web := fstest.MapFS{
-		"index.html":    {Data: []byte("<html>app</html>")},
-		"assets/app.js": {Data: []byte("console.log(1)")},
+		"index.html":       {Data: []byte("<html>app</html>")},
+		"assets/app.js":    {Data: []byte("console.log(1)")},
+		"assets/app.js.gz": {Data: gz.Bytes()},
 	}
 	box, _ := secret.NewBox(bytes.Repeat([]byte{3}, 32))
 	reg := cloud.NewRegistry(demo.NewAWS().WithoutDelay(), demo.NewAliyun().WithoutDelay())
@@ -172,6 +178,42 @@ func TestSPAFallbackAndAPINotFound(t *testing.T) {
 	code, meta, _ := env.do("GET", "/api/v1/meta", "", nil)
 	if code != 200 || meta["name"] != "云枢" {
 		t.Fatalf("meta: %d %v", code, meta)
+	}
+}
+
+func TestSPAServesPrecompressedAssets(t *testing.T) {
+	env := newTestEnv(t)
+	get := func(accept string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest("GET", "/assets/app.js", nil)
+		if accept != "" {
+			req.Header.Set("Accept-Encoding", accept)
+		}
+		rec := httptest.NewRecorder()
+		env.handler.ServeHTTP(rec, req)
+		return rec
+	}
+
+	rec := get("br, gzip")
+	if rec.Code != 200 || rec.Header().Get("Content-Encoding") != "gzip" || !strings.HasPrefix(rec.Header().Get("Content-Type"), "text/javascript") {
+		t.Fatalf("gzip response: %d %v", rec.Code, rec.Header())
+	}
+	zr, err := gzip.NewReader(rec.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(zr)
+	if string(body) != "console.log(1)" {
+		t.Fatalf("decompressed body = %q", body)
+	}
+
+	for _, accept := range []string{"", "br", "gzip;q=0"} {
+		rec = get(accept)
+		if rec.Code != 200 || rec.Header().Get("Content-Encoding") != "" || rec.Body.String() != "console.log(1)" {
+			t.Errorf("Accept-Encoding %q: %d %v %q", accept, rec.Code, rec.Header(), rec.Body.String())
+		}
+		if rec.Header().Get("Vary") != "Accept-Encoding" {
+			t.Errorf("Accept-Encoding %q: missing Vary header", accept)
+		}
 	}
 }
 
