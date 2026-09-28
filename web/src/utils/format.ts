@@ -153,6 +153,12 @@ export function formatAxis(v: number, unit: MetricUnit | string): string {
   }
 }
 
+/** 每 30 分钟 / 每 2 小时 */
+export function intervalText(minutes: number): string {
+  if (minutes >= 60 && minutes % 60 === 0) return `每 ${minutes / 60} 小时`
+  return `每 ${minutes} 分钟`
+}
+
 /** 单位的中文说明，用于图表标题旁。 */
 export function unitLabel(unit: MetricUnit | string): string {
   return (

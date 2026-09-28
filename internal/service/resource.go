@@ -186,19 +186,45 @@ func (s *ResourceService) Filters(f ResourceFilter) (*Filters, error) {
 	}
 	scoped := f
 	scoped.Region, scoped.Status = "", ""
-	var regions, statuses []kv
+	type pr struct {
+		P, K string
+		N    int64
+	}
+	var byRegion []pr
+	var statuses []kv
 	q, _ = s.base(scoped, true)
-	if err := q.Select("resources.region AS k, COUNT(*) AS n").Group("resources.region").Scan(&regions).Error; err != nil {
+	if err := q.Select("resources.provider AS p, resources.region AS k, COUNT(*) AS n").
+		Group("resources.provider, resources.region").Scan(&byRegion).Error; err != nil {
 		return nil, err
 	}
 	q, _ = s.base(scoped, true)
 	if err := q.Select("resources.status AS k, COUNT(*) AS n").Group("resources.status").Scan(&statuses).Error; err != nil {
 		return nil, err
 	}
-	sort.Slice(regions, func(i, j int) bool { return regions[i].N > regions[j].N })
-	for _, r := range regions {
-		out.Regions = append(out.Regions, Option{Value: r.K, Count: r.N})
+	// The same region ID can exist in both clouds (and even name different
+	// places, e.g. eu-west-1), so merge counts and keep every distinct name.
+	regionIdx := map[string]int{}
+	for _, r := range byRegion {
+		i, ok := regionIdx[r.K]
+		if !ok {
+			i = len(out.Regions)
+			regionIdx[r.K] = i
+			out.Regions = append(out.Regions, Option{Value: r.K})
+		}
+		out.Regions[i].Count += r.N
+		if name := s.registry.RegionName(r.P, r.K); name != "" && !strings.Contains(out.Regions[i].Label, name) {
+			if out.Regions[i].Label != "" {
+				out.Regions[i].Label += " / "
+			}
+			out.Regions[i].Label += name
+		}
 	}
+	sort.SliceStable(out.Regions, func(i, j int) bool {
+		if out.Regions[i].Count != out.Regions[j].Count {
+			return out.Regions[i].Count > out.Regions[j].Count
+		}
+		return out.Regions[i].Value < out.Regions[j].Value
+	})
 	for _, r := range statuses {
 		out.Statuses = append(out.Statuses, Option{Value: r.K, Count: r.N})
 	}

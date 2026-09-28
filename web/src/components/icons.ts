@@ -44,6 +44,7 @@ export const icons = {
   info: { sw: 1.8, els: [['c', 12, 12, 9], ['p', 'M12 11v5M12 8h.01']] },
   plus: { sw: 2.2, els: [['p', 'M12 5v14M5 12h14']] },
   sync: { sw: 2.2, els: [['p', 'M20 11a8 8 0 1 0-2.3 5.7'], ['p', 'M20 4v7h-7']] },
+  refresh: { sw: 2, els: [['p', 'M20 11a8 8 0 1 0-2.3 5.7'], ['p', 'M20 4v7h-7']] },
   idle: { sw: 1.8, els: [['c', 12, 12, 8.5], ['p', 'M9 9.5v5M15 9.5v5']] },
   clock: { sw: 1.8, els: [['c', 12, 13, 8], ['p', 'M12 9v4l2.5 2M9 2.5h6']] },
   chevronDown: { sw: 2, els: [['p', 'M6 9l6 6 6-6']] },

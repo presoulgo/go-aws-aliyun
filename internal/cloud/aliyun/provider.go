@@ -43,6 +43,9 @@ func New() *Provider {
 
 func (p *Provider) Name() string { return model.ProviderAliyun }
 
+// RegionName implements cloud.RegionNamer.
+func (p *Provider) RegionName(id string) string { return RegionName(id) }
+
 func (p *Provider) ResourceTypes() []cloud.TypeSpec {
 	return []cloud.TypeSpec{
 		{Type: model.TypeVM},

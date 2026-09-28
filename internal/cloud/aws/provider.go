@@ -42,6 +42,9 @@ func New() *Provider {
 
 func (p *Provider) Name() string { return model.ProviderAWS }
 
+// RegionName implements cloud.RegionNamer.
+func (p *Provider) RegionName(id string) string { return RegionName(id) }
+
 // ResourceTypes: EC2, RDS and ELBv2 are regional; S3 lists buckets globally.
 func (p *Provider) ResourceTypes() []cloud.TypeSpec {
 	return []cloud.TypeSpec{

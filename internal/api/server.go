@@ -15,6 +15,9 @@ type Meta struct {
 	Name    string `json:"name"`
 	Demo    bool   `json:"demo"`
 	Version string `json:"version"`
+	// SyncIntervalMinutes and AuditRetentionDays are shown in page hints.
+	SyncIntervalMinutes int `json:"sync_interval_minutes"`
+	AuditRetentionDays  int `json:"audit_retention_days"`
 }
 
 // Deps are the services the API depends on.

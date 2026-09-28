@@ -247,6 +247,17 @@ func TestDemoEndToEnd(t *testing.T) {
 	if err != nil || f.Counts[model.TypeVM] != 214 || len(f.Regions) == 0 || len(f.Accounts) != 3 {
 		t.Fatalf("filters: %+v %v", f, err)
 	}
+	all, err := env.res.Filters(ResourceFilter{Type: model.TypeVM})
+	if err != nil {
+		t.Fatal(err)
+	}
+	labels := map[string]string{}
+	for _, r := range all.Regions {
+		labels[r.Value] = r.Label
+	}
+	if labels["cn-hangzhou"] != "华东1（杭州）" || labels["us-east-1"] == "" {
+		t.Fatalf("region labels: %v", labels)
+	}
 
 	dash := NewDashboardService(env.syncer.db, 5, 30)
 	sum, err := dash.Summary("")
@@ -255,6 +266,14 @@ func TestDemoEndToEnd(t *testing.T) {
 	}
 	if sum.Accounts != 6 || sum.VMTotal != 486 || sum.Expiring != 12 || sum.TopCPU[0].Name != "prod-api-07" || len(sum.RecentSync) != 4 {
 		t.Fatalf("summary: accounts=%d vm=%d expiring=%d top=%v recent=%d", sum.Accounts, sum.VMTotal, sum.Expiring, sum.TopCPU, len(sum.RecentSync))
+	}
+	for _, s := range sum.RecentSync {
+		if (s.Status == model.JobPartial) != (s.FirstError != nil) {
+			t.Fatalf("recent sync %s: status %s, first error %+v", s.AccountName, s.Status, s.FirstError)
+		}
+		if s.FirstError != nil && (s.FirstError.Region != "cn-hongkong" || s.FirstError.Type != model.TypeLB) {
+			t.Fatalf("first error: %+v", s.FirstError)
+		}
 	}
 	withData := 0
 	for _, p := range sum.CPUTrend {

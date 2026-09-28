@@ -124,7 +124,11 @@ func run() error {
 	dashboard := service.NewDashboardService(db, cfg.Insight.IdleCPUThreshold, cfg.Insight.ExpiringDays)
 
 	handler, err := api.New(api.Deps{
-		Meta:           api.Meta{Name: cfg.App.Name, Demo: cfg.Demo, Version: version},
+		Meta: api.Meta{
+			Name: cfg.App.Name, Demo: cfg.Demo, Version: version,
+			SyncIntervalMinutes: int(cfg.Sync.Interval.D().Minutes()),
+			AuditRetentionDays:  int(cfg.Audit.Retention.D().Hours() / 24),
+		},
 		TrustedProxies: cfg.Server.TrustedProxies,
 		Users:          users,
 		Audit:          audit,

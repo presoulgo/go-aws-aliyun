@@ -71,6 +71,8 @@ type SyncItem struct {
 	Message     string     `json:"message"`
 	TasksTotal  int        `json:"tasks_total"`
 	TasksDone   int        `json:"tasks_done"`
+	// FirstError is the first failed task, shown as the job summary.
+	FirstError *model.TaskError `json:"first_error,omitempty"`
 }
 
 // Summary is the overview page data.
@@ -285,11 +287,16 @@ func (s *DashboardService) recentSync(accounts []model.CloudAccount) ([]SyncItem
 			items += n
 		}
 		a := names[j.AccountID]
-		out = append(out, SyncItem{
+		item := SyncItem{
 			AccountID: j.AccountID, AccountName: a.Name, Provider: a.Provider, JobID: j.ID, Status: j.Status,
 			StartedAt: j.StartedAt, FinishedAt: j.FinishedAt, Items: items, Regions: regionCount[j.AccountID],
 			ErrorCount: j.ErrorCount, Message: j.Message, TasksTotal: j.TasksTotal, TasksDone: j.TasksDone,
-		})
+		}
+		if len(j.Errors) > 0 {
+			e := j.Errors[0]
+			item.FirstError = &e
+		}
+		out = append(out, item)
 	}
 	return out, nil
 }

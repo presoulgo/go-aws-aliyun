@@ -27,6 +27,8 @@ export interface Meta {
   name: string
   demo: boolean
   version: string
+  sync_interval_minutes: number
+  audit_retention_days: number
 }
 
 export interface User {
@@ -301,5 +303,6 @@ export interface DashboardSummary {
     message: string
     tasks_total: number
     tasks_done: number
+    first_error?: TaskError
   }[]
 }

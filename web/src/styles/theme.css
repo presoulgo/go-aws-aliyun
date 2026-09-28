@@ -275,6 +275,10 @@ button {
   color: var(--ys-err-fg);
 }
 
+.ys-link.danger:disabled {
+  color: var(--el-text-color-disabled);
+}
+
 /* ---------- Element Plus 组件微调 ---------- */
 .el-button {
   --el-button-font-weight: 500;
@@ -396,6 +400,39 @@ button {
   font-weight: 400;
 }
 
+.el-pagination.is-background .btn-prev,
+.el-pagination.is-background .btn-next,
+.el-pagination.is-background .el-pager li {
+  min-width: 32px;
+  height: 32px;
+  margin: 0 3px;
+  border: 1px solid var(--ys-border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ys-text-label);
+  font-weight: 400;
+}
+
+.el-pagination.is-background .el-pager li.is-active {
+  border-color: var(--ys-primary);
+  background: var(--ys-primary);
+  color: #fff;
+  font-weight: 500;
+}
+
+.el-pagination.is-background .btn-prev:disabled,
+.el-pagination.is-background .btn-next:disabled {
+  color: #b5bbc6;
+  background: #fff;
+}
+
+.el-pagination.is-background .el-pager li:not(.is-active):hover,
+.el-pagination.is-background .btn-prev:not(:disabled):hover,
+.el-pagination.is-background .btn-next:not(:disabled):hover {
+  border-color: #c9d1ee;
+  color: var(--ys-primary);
+}
+
 /* Tabs */
 .el-tabs {
   --el-tabs-header-height: 44px;
@@ -506,6 +543,56 @@ button {
 .el-table__empty-text {
   color: var(--ys-text-muted);
   line-height: 1.6;
+}
+
+/* ECharts 提示框（内容由 utils/charts.ts 的 tooltipBox 生成） */
+.ys-tt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+  font-family: var(--ys-font-sans);
+}
+
+.ys-tt-title {
+  margin-bottom: 2px;
+  font-family: var(--ys-font-mono);
+  font-size: 11px;
+  color: var(--ys-text-muted);
+}
+
+.ys-tt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.ys-tt-key {
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.ys-tt-value {
+  font-weight: 600;
+  color: var(--ys-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ys-tt-value.muted {
+  font-weight: 400;
+  color: var(--ys-text-muted);
+}
+
+.ys-tt-name {
+  color: var(--ys-text-secondary);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .el-tooltip__popper.is-dark,

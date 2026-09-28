@@ -34,6 +34,30 @@ func (r *Registry) Get(name string) (Provider, bool) {
 	return p, ok
 }
 
+// RegionNamer is implemented by providers that know the display names of
+// their regions.
+type RegionNamer interface {
+	RegionName(id string) string
+}
+
+// RegionName returns the display name of a provider's region, or "" when
+// unknown.
+func (r *Registry) RegionName(provider, id string) string {
+	if r == nil {
+		return ""
+	}
+	p, ok := r.Get(provider)
+	if !ok {
+		return ""
+	}
+	if n, ok := p.(RegionNamer); ok {
+		if name := n.RegionName(id); name != id {
+			return name
+		}
+	}
+	return ""
+}
+
 // Names lists registered provider names.
 func (r *Registry) Names() []string {
 	r.mu.RLock()

@@ -54,6 +54,14 @@ func (p *Provider) WithoutDelay() *Provider {
 
 func (p *Provider) Name() string { return p.name }
 
+// RegionName implements cloud.RegionNamer with the real providers' names.
+func (p *Provider) RegionName(id string) string {
+	if p.name == model.ProviderAWS {
+		return awsprov.RegionName(id)
+	}
+	return aliprov.RegionName(id)
+}
+
 func (p *Provider) ResourceTypes() []cloud.TypeSpec {
 	return []cloud.TypeSpec{
 		{Type: model.TypeVM},
@@ -153,11 +161,16 @@ func (p *Provider) CPUSnapshot(ctx context.Context, cred cloud.Credential, regio
 			continue
 		}
 		seed := hash64(id, "cpu")
+		hv, isHero := heroCPU(id, data)
 		hourly := map[int64]float64{}
 		for h := last.Add(-23 * time.Hour); !h.After(last); h = h.Add(time.Hour) {
-			hourly[h.Unix()] = round1(cpuAt(base, seed, h))
+			if isHero {
+				hourly[h.Unix()] = round1(heroCPUAt(hv, seed, h, region))
+			} else {
+				hourly[h.Unix()] = round1(cpuAt(base, seed, h, region))
+			}
 		}
-		if hv, isHero := heroCPU(id, data); isHero {
+		if isHero {
 			hourly[last.Unix()] = hv
 		}
 		out[id] = cloud.CPUStat{Hourly: hourly}
@@ -293,32 +306,69 @@ func smooth(seed uint64, t time.Time) float64 {
 	return a + (b-a)*frac + 0.25*mix(seed^0xABCDEF, u/60)
 }
 
-// daily peaks around 14:00 and bottoms out around 02:00 Beijing time.
-func daily(t time.Time) float64 {
-	bj := t.UTC().Add(8 * time.Hour)
-	h := float64(bj.Hour()) + float64(bj.Minute())/60
+// utcOffset is the approximate local time offset of a region, in hours, so the
+// daily load curve follows the users of that region.
+func utcOffset(region string) float64 {
+	switch {
+	case strings.HasPrefix(region, "us-west"):
+		return -8
+	case strings.HasPrefix(region, "us-"), strings.HasPrefix(region, "ca-"):
+		return -5
+	case strings.HasPrefix(region, "sa-"):
+		return -3
+	case strings.HasPrefix(region, "eu-"), strings.HasPrefix(region, "me-"):
+		return 1
+	case region == "ap-south-1":
+		return 5.5
+	case strings.HasPrefix(region, "ap-northeast"):
+		return 9
+	case strings.HasPrefix(region, "ap-southeast-2"):
+		return 10
+	default:
+		return 8
+	}
+}
+
+// daily peaks around 14:00 and bottoms out around 02:00 local time.
+func daily(t time.Time, region string) float64 {
+	local := t.UTC().Add(time.Duration(utcOffset(region) * float64(time.Hour)))
+	h := float64(local.Hour()) + float64(local.Minute())/60
 	return math.Sin((h - 8) / 24 * 2 * math.Pi)
 }
 
-func cpuAt(base float64, seed uint64, t time.Time) float64 {
-	v := base*(1+0.28*daily(t)) + 3.5*smooth(seed, t)*math.Min(1, base/20+0.2)
+func cpuAt(base float64, seed uint64, t time.Time, region string) float64 {
+	// The daily swing is ±28% of the base, but busy hosts keep headroom below
+	// 100% so their curve does not flatten at the ceiling.
+	swing := math.Min(0.28*base, 0.9*(99-base))
+	v := base + swing*daily(t, region) + 3.5*smooth(seed, t)*math.Min(1, base/20+0.2)
 	return clamp(v, 0.3, 99.5)
+}
+
+// heroCPUAt keeps the prototype's busy hosts close to their headline value
+// (for example prod-api-07 at 92.4%), so the dashboard Top 5 and the metric
+// charts tell the same story.
+func heroCPUAt(v float64, seed uint64, t time.Time, region string) float64 {
+	swing := math.Min(0.03*v, 0.9*(99-v))
+	return clamp(v+swing*daily(t, region)+2.2*smooth(seed, t), 0.3, 99.5)
 }
 
 func metricAt(ref cloud.ResourceRef, key string, d *accountData, t time.Time) float64 {
 	seed := hash64(ref.ResourceID, key)
 	n := smooth(seed, t)
-	day := daily(t)
+	day := daily(t, ref.Region)
 	pick := func(lo, span uint64) float64 { return float64(lo + seed%span) }
 	switch ref.Type {
 	case model.TypeVM:
 		switch key {
 		case cloud.MetricCPU:
+			if hv, ok := heroCPU(ref.ResourceID, d); ok {
+				return heroCPUAt(hv, hash64(ref.ResourceID, "cpu"), t, ref.Region)
+			}
 			base := d.cpuBase[ref.ResourceID]
 			if base == 0 {
 				base = 20
 			}
-			return cpuAt(base, hash64(ref.ResourceID, "cpu"), t)
+			return cpuAt(base, hash64(ref.ResourceID, "cpu"), t, ref.Region)
 		case cloud.MetricMem:
 			return clamp(pick(38, 36)+2*day+1.5*n, 1, 99)
 		case cloud.MetricNetIn:
