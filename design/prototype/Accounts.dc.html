@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>云账号</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;font-family:'IBM Plex Sans','Noto Sans SC','PingFang SC',sans-serif;color:#151821}
+a{color:#2443B5}a:hover{color:#18318C}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; box-sizing: border-box; display: flex; background: #F4F5F7; color: #151821; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; overflow: hidden;">
+  <dc-import name="Sidebar" active="accounts" hint-size="232px,900px"></dc-import>
+  <div style="width: 1208px; flex-shrink: 0; display: flex; flex-direction: column;">
+    <dc-import name="Topbar" hint-size="1208px,64px"></dc-import>
+    <main style="height: 836px; box-sizing: border-box; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-size: 22px; font-weight: 600;">云账号</h1>
+          <span style="font-size: 13px; color: #555C6B;">6 个账号 · 5 个同步正常 · 1 个需要关注 · 每 30 分钟自动同步</span>
+        </div>
+        <a href="AccountForm.dc.html" style="height: 38px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-radius: 8px; background: #2443B5; color: #FFFFFF; font-size: 13px; font-weight: 500; text-decoration: none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          新增云账号
+        </a>
+      </div>
+
+      <section style="flex-shrink: 0; box-sizing: border-box; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; overflow: hidden;">
+        <div style="height: 44px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 110px 170px 100px 60px 170px 56px 168px; column-gap: 12px; align-items: center; background: #F7F8FA; border-bottom: 1px solid #EEF0F3; font-size: 12px; color: #555C6B;">
+          <span>账号名称 / 云账号 UID</span><span>云厂商</span><span>凭证</span><span>同步地域</span><span style="text-align: right;">资源</span><span>最近同步</span><span>启用</span><span>操作</span>
+        </div>
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+          <div style="height: 60px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 110px 170px 100px 60px 170px 56px 168px; column-gap: 12px; align-items: center; border-bottom: 1px solid #EEF0F3; font-size: 13px; background: {{r.rowBg}};">
+            <span style="min-width: 0; display: flex; flex-direction: column; gap: 2px;"><span style="font-weight: 500;">{{r.name}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">{{r.uid}}</span></span>
+            <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;"><span style="padding: 0 6px; border-radius: 5px; font-size: 12px; line-height: 18px; background: {{r.tagBg}}; color: {{r.tagFg}};">{{r.cloud}}</span><span style="font-size: 12px; color: #555C6B;">{{r.kind}}</span></span>
+            <span style="display: flex; flex-direction: column; gap: 2px;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">{{r.ak}}</span><span style="font-size: 11px; color: #6B7280;">{{r.akNote}}</span></span>
+            <span style="font-size: 12px; color: #3F4654;">{{r.regions}}</span>
+            <span style="text-align: right; font-weight: 500;">{{r.count}}</span>
+            <span style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;"><span style="display: flex; align-items: center; gap: 6px; color: {{r.syncFg}};"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{r.syncDot}};"></span>{{r.syncLabel}}</span><span style="color: #6B7280;">{{r.syncSub}}</span></span>
+            <button type="button" role="switch" aria-checked="{{r.enabledAttr}}" aria-label="启用 {{r.name}}" onClick="{{r.toggle}}" style="width: 36px; height: 20px; padding: 2px; box-sizing: border-box; border: 0; border-radius: 999px; display: flex; cursor: pointer; background: {{r.swBg}}; justify-content: {{r.swJustify}};"><span style="width: 16px; height: 16px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 2px rgba(21, 24, 33, 0.25);"></span></button>
+            <span style="display: flex; align-items: center; gap: 2px;">
+              <button type="button" onClick="{{r.sync}}" style="height: 30px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: #2443B5; font-family: inherit; font-size: 13px; cursor: pointer;">{{r.syncAction}}</button>
+              <button type="button" onClick="{{r.history}}" style="height: 30px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: #2443B5; font-family: inherit; font-size: 13px; cursor: pointer;">历史</button>
+              <a href="AccountForm.dc.html" style="height: 30px; padding: 0 6px; display: flex; align-items: center; border-radius: 6px; color: #2443B5; font-size: 13px; text-decoration: none;">编辑</a>
+              <button type="button" onClick="{{r.askDelete}}" style="height: 30px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: #B42318; font-family: inherit; font-size: 13px; cursor: pointer;">删除</button>
+            </span>
+          </div>
+        </sc-for>
+      </section>
+
+      <section style="flex-grow: 1; box-sizing: border-box; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; overflow: hidden;">
+        <div style="height: 22px; display: flex; align-items: center; gap: 10px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">同步历史 · {{hist.name}}</h2>
+          <span style="font-size: 12px; color: #6B7280;">保留最近 50 次</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <sc-for list="{{hist.jobs}}" as="j" hint-placeholder-count="5">
+            <div style="box-sizing: border-box; padding: 9px 0; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid {{j.rule}};">
+              <div style="display: flex; align-items: center; gap: 16px; font-size: 13px;">
+                <span style="width: 64px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #3F4654;">{{j.time}}</span>
+                <span style="width: 88px; justify-self: start;"><span style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: {{j.bg}}; color: {{j.fg}};"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{j.dot}};"></span>{{j.status}}</span></span>
+                <span style="width: 110px; color: #555C6B;">{{j.trigger}}</span>
+                <span style="width: 90px; color: #555C6B;">用时 {{j.cost}}</span>
+                <span style="width: 90px; color: #555C6B;">{{j.items}} 项</span>
+                <span style="color: {{j.errColor}};">{{j.errText}}</span>
+              </div>
+              <sc-if value="{{j.hasErr}}" hint-placeholder-val="{{false}}">
+                <div style="margin-left: 80px; padding: 8px 12px; display: flex; gap: 10px; border-radius: 8px; background: #FFF8EC; border: 1px solid #F3D9B5; font-size: 12px; line-height: 1.6; color: #6B3D00;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B26A12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3.5l9.5 16.5h-19z"></path><path d="M12 10v4.5M12 17.5h.01"></path></svg>
+                  <span><span style="font-family: 'IBM Plex Mono', monospace;">cn-hongkong · 负载均衡（ALB）</span>：请求超时（context deadline exceeded）。该地域保留上次同步的数据，其余 18 个任务正常完成。</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <sc-if value="{{confirm.open}}" hint-placeholder-val="{{false}}">
+    <div style="position: absolute; left: 0; top: 0; width: 1440px; height: 900px; display: flex; align-items: center; justify-content: center; background: rgba(21, 24, 33, 0.42);">
+      <div role="alertdialog" aria-label="确认删除云账号" style="width: 440px; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column; gap: 14px; border-radius: 12px; background: #FFFFFF; box-shadow: 0 24px 60px rgba(21, 24, 33, 0.25);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="width: 36px; height: 36px; border-radius: 50%; background: #FDECEA; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"></path></svg></span>
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600;">删除云账号「{{confirm.name}}」？</h2>
+        </div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.7; color: #3F4654;">将同时删除该账号下的 {{confirm.count}} 项资源和全部同步记录，操作不可恢复。云上的资源本身不受影响。</p>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px;">
+          <button type="button" onClick="{{closeConfirm}}" style="height: 36px; padding: 0 16px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: inherit; font-size: 13px; cursor: pointer;">取消</button>
+          <button type="button" onClick="{{closeConfirm}}" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #B42318; color: #FFFFFF; font-family: inherit; font-size: 13px; cursor: pointer;">确认删除</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var sel = st.sel == null ? 3 : st.sel;
+    var syncing = st.syncing || {};
+    var disabled = st.disabled || {};
+
+    var accounts = [
+      { name: 'AWS 生产账号', uid: '4829-1034-5561', aws: true, kind: '全球区', ak: 'AKIA••••••••7Q2X', akNote: 'AccessKey', regions: '9 个地域', count: 209, ok: true, ago: '2 分钟前' },
+      { name: 'AWS 中国区', uid: '0925-6671-2208', aws: true, kind: '中国区', ak: 'AKIA••••••••M9KD', akNote: 'AccessKey', regions: '2 个地域', count: 64, ok: true, ago: '9 分钟前' },
+      { name: 'AWS 数据平台', uid: '7710-4432-9015', aws: true, kind: '全球区', ak: 'AKIA••••••••7Q2X', akNote: 'AssumeRole · OpsReadOnly', regions: '3 个地域', count: 91, ok: true, ago: '35 分钟前' },
+      { name: '阿里云 主账号', uid: '1829••••4401', aws: false, kind: '中国站', ak: 'LTAI••••••••x7Fp', akNote: 'AccessKey', regions: '全部（6 个）', count: 147, ok: false, ago: '6 分钟前' },
+      { name: '阿里云 电商业务', uid: '1507••••2290', aws: false, kind: '中国站', ak: 'LTAI••••••••x7Fp', akNote: 'RAM 角色 · ops-readonly', regions: '4 个地域', count: 176, ok: true, ago: '32 分钟前' },
+      { name: '阿里云 测试账号', uid: '1391••••0876', aws: false, kind: '中国站', ak: 'LTAI••••••••w2Rk', akNote: 'AccessKey', regions: '全部（3 个）', count: 97, ok: true, ago: '31 分钟前' }
+    ];
+
+    var rows = accounts.map(function (a, i) {
+      var isSync = !!syncing[i];
+      var off = !!disabled[i];
+      var syncLabel, syncFg, syncDot, syncSub;
+      if (isSync) { syncLabel = '同步中'; syncFg = '#2443B5'; syncDot = '#2443B5'; syncSub = '已完成 3 / 9 个任务'; }
+      else if (off) { syncLabel = '已停用'; syncFg = '#3F4654'; syncDot = '#9AA1AD'; syncSub = '不参与定时同步'; }
+      else if (a.ok) { syncLabel = '成功'; syncFg = '#16804A'; syncDot = '#1F9D5B'; syncSub = a.ago; }
+      else { syncLabel = '部分成功'; syncFg = '#8A4B00'; syncDot = '#E08A00'; syncSub = a.ago + ' · 1 个错误'; }
+      return Object.assign({}, a, {
+        cloud: a.aws ? 'AWS' : '阿里云',
+        tagBg: a.aws ? '#E6ECF5' : '#FDEEE2',
+        tagFg: a.aws ? '#1B2F52' : '#A94600',
+        rowBg: i === sel ? '#F5F7FE' : '#FFFFFF',
+        syncLabel: syncLabel, syncFg: syncFg, syncDot: syncDot, syncSub: syncSub,
+        syncAction: isSync ? '取消' : '同步',
+        enabledAttr: off ? 'false' : 'true',
+        swBg: off ? '#C9CED6' : '#2443B5',
+        swJustify: off ? 'flex-start' : 'flex-end',
+        toggle: function () { var d = Object.assign({}, disabled); d[i] = !off; self.setState({ disabled: d }); },
+        sync: function () { var s = Object.assign({}, syncing); s[i] = !isSync; self.setState({ syncing: s, sel: i }); },
+        history: function () { self.setState({ sel: i }); },
+        askDelete: function () { self.setState({ confirmIdx: i }); }
+      });
+    });
+
+    var acc = accounts[sel];
+    var mk = function (time, ok, trigger, cost, items, err) {
+      return { time: time, ok: ok, trigger: trigger, cost: cost, items: items, err: err };
+    };
+    var jobs = acc.ok
+      ? [mk('12:00:02', true, '定时同步', '33s', acc.count), mk('11:30:01', true, '定时同步', '31s', acc.count), mk('11:12:40', true, '手动 · admin', '35s', acc.count), mk('11:00:03', true, '定时同步', '30s', acc.count - 1), mk('10:30:02', true, '定时同步', '32s', acc.count - 1)]
+      : [mk('12:00:02', false, '定时同步', '41s', acc.count, true), mk('11:30:01', true, '定时同步', '38s', acc.count), mk('11:12:40', true, '手动 · admin', '40s', acc.count - 1), mk('11:00:03', true, '定时同步', '39s', acc.count - 1), mk('10:30:02', true, '定时同步', '37s', acc.count - 1)];
+    if (syncing[sel]) jobs = [{ time: '12:04:31', running: true, trigger: '手动 · admin', cost: '12s…', items: '—' }].concat(jobs.slice(0, 4));
+    jobs = jobs.map(function (j, i, all) {
+      var status, bg, fg, dot;
+      if (j.running) { status = '进行中'; bg = '#EDF1FD'; fg = '#2443B5'; dot = '#2443B5'; }
+      else if (j.ok) { status = '成功'; bg = '#E9F6EF'; fg = '#16804A'; dot = '#1F9D5B'; }
+      else { status = '部分成功'; bg = '#FFF1DC'; fg = '#8A4B00'; dot = '#E08A00'; }
+      return Object.assign({}, j, {
+        status: status, bg: bg, fg: fg, dot: dot,
+        hasErr: !!j.err,
+        errText: j.err ? '1 个任务失败' : (j.running ? '正在采集…' : '无错误'),
+        errColor: j.err ? '#8A4B00' : '#6B7280',
+        rule: i === all.length - 1 ? 'transparent' : '#EEF0F3'
+      });
+    });
+
+    var ci = st.confirmIdx;
+    var confirmOpen = ci != null;
+    return {
+      rows: rows,
+      hist: { name: acc.name, jobs: jobs },
+      confirm: { open: confirmOpen, name: confirmOpen ? accounts[ci].name : '', count: confirmOpen ? accounts[ci].count : 0 },
+      closeConfirm: function () { self.setState({ confirmIdx: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

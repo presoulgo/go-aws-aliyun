@@ -110,7 +110,8 @@ func (s *AccountService) view(a model.CloudAccount, counts map[uint]int64, regio
 // List returns all accounts with resource counts and their latest job.
 func (s *AccountService) List() ([]AccountView, error) {
 	var accounts []model.CloudAccount
-	if err := s.db.Order("provider ASC, id ASC").Find(&accounts).Error; err != nil {
+	// AWS accounts first, then Alibaba Cloud, each in the order they were added.
+	if err := s.db.Order("CASE provider WHEN 'aws' THEN 0 WHEN 'aliyun' THEN 1 ELSE 2 END, id ASC").Find(&accounts).Error; err != nil {
 		return nil, err
 	}
 	counts, regions, err := s.resourceCounts()

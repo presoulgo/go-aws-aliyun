@@ -105,7 +105,9 @@ async function pickDefaults() {
   // 负载均衡默认指标是 QPS，四层的 NLB 没有这个指标，优先挑七层的。
   const prefer = (list: Resource[]) =>
     type.value === 'lb' ? [...list].sort((x, y) => Number(y.extra?.lb_kind !== 'nlb') - Number(x.extra?.lb_kind !== 'nlb')) : list
-  const picked = [...prefer(a.items).slice(0, 2), ...prefer(b.items).slice(0, 2)].slice(0, MAX)
+  // 两朵云交替排列，相邻两条曲线来自不同的云，和原型一致。
+  const [ali, aws] = [prefer(a.items), prefer(b.items)]
+  const picked = [ali[0], aws[0], ali[1], aws[1]].filter((r): r is Resource => !!r).slice(0, MAX)
   picked.forEach(remember)
   slots.value = picked.map((r) => r.id)
 }

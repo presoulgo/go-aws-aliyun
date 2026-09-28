@@ -88,7 +88,8 @@ func (s *SyncService) Trigger(accountID uint, actor Actor, manual bool) (*model.
 		return nil, err
 	}
 	if started && manual {
-		s.audit.Record(actor, AuditEntry{Category: model.AuditSync, Action: ActSyncManual, Target: acc.Name, Detail: fmt.Sprintf("同步任务 #%d", job.ID)})
+		s.audit.Record(actor, AuditEntry{Category: model.AuditSync, Action: ActSyncManual, Target: acc.Name,
+			Detail: fmt.Sprintf("同步任务 #%d · %s", job.ID, regionSummary(acc.Regions, 0))})
 	}
 	return job, nil
 }

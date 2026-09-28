@@ -61,6 +61,21 @@ audit:
 	}
 }
 
+// The shipped example must stay loadable and match the built-in defaults.
+func TestExampleConfigMatchesDefaults(t *testing.T) {
+	cfg, err := Load(filepath.Join("..", "..", "configs", "config.example.yaml"), false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Default()
+	want.normalize()
+	if cfg.Server.Addr != want.Server.Addr || cfg.Sync != want.Sync || cfg.Security.TokenTTL != want.Security.TokenTTL ||
+		cfg.Audit != want.Audit || cfg.Insight != want.Insight || cfg.Metrics != want.Metrics || cfg.Log != want.Log ||
+		cfg.Data != want.Data || cfg.App != want.App || cfg.Demo {
+		t.Fatalf("example config differs from defaults:\n got %+v\nwant %+v", cfg, want)
+	}
+}
+
 func TestLoadRejectsUnknownKeysAndBadValues(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")

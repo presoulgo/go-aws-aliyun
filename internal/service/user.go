@@ -92,6 +92,12 @@ func (s *UserService) Login(username, password, ip string) (*LoginResult, error)
 		if !found {
 			detail = "用户不存在"
 		}
+		maxFailures := s.limiter.MaxFailures()
+		if !until.IsZero() {
+			detail += fmt.Sprintf("（连续第 %d 次，账号锁定 %d 分钟）", maxFailures, minutesUntil(s.now(), until))
+		} else {
+			detail += fmt.Sprintf("（连续第 %d 次，%d 次后锁定 %d 分钟）", maxFailures-remaining, maxFailures, int(s.lockFor.Minutes()))
+		}
 		if found {
 			actor.UserID = u.ID
 		}
@@ -221,6 +227,9 @@ type UpdateUserInput struct {
 // Update changes a user's display name, role or disabled flag.
 func (s *UserService) Update(actor Actor, id uint, in UpdateUserInput) (*model.User, error) {
 	var out *model.User
+	// The audit entry is written after the commit: the audit service uses its
+	// own connection and SQLite would block it on this transaction's lock.
+	var entry *AuditEntry
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		u, err := findUser(tx, id)
 		if err != nil {
@@ -286,19 +295,24 @@ func (s *UserService) Update(actor Actor, id uint, in UpdateUserInput) (*model.U
 			return err
 		}
 		out = u
-		s.audit.Record(actor, AuditEntry{Category: model.AuditUser, Action: action, Target: u.Username, Detail: strings.Join(changes, "；")})
+		entry = &AuditEntry{Category: model.AuditUser, Action: action, Target: u.Username, Detail: strings.Join(changes, "；")}
 		return nil
 	})
+	if err == nil && entry != nil {
+		s.audit.Record(actor, *entry)
+	}
 	return out, err
 }
 
 // Delete removes a user.
 func (s *UserService) Delete(actor Actor, id uint) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
+	var username string
+	err := s.db.Transaction(func(tx *gorm.DB) error {
 		u, err := findUser(tx, id)
 		if err != nil {
 			return err
 		}
+		username = u.Username
 		if u.ID == actor.UserID {
 			return apperr.Forbidden("不能删除自己")
 		}
@@ -307,12 +321,13 @@ func (s *UserService) Delete(actor Actor, id uint) error {
 				return err
 			}
 		}
-		if err := tx.Delete(u).Error; err != nil {
-			return err
-		}
-		s.audit.Record(actor, AuditEntry{Category: model.AuditUser, Action: ActUserDelete, Target: u.Username})
-		return nil
+		return tx.Delete(u).Error
 	})
+	if err != nil {
+		return err
+	}
+	s.audit.Record(actor, AuditEntry{Category: model.AuditUser, Action: ActUserDelete, Target: username})
+	return nil
 }
 
 // ResetPassword sets a new password (generated when empty) and returns it.

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>信息架构与核心流程</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F7F4;font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;color:#17181C}
+a{color:#2747B8}a:hover{color:#1B338A}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 52px 64px; display: flex; flex-direction: column; gap: 32px; background: #F7F7F4; color: #17181C; font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;">
+
+  <header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; padding-bottom: 28px; border-bottom: 1px solid #DCDCD5;">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.08em; color: #2747B8;">02 / 信息架构</div>
+      <h1 style="margin: 0; font-size: 40px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em;">站点地图、核心流程与权限</h1>
+    </div>
+    <div style="display: flex; align-items: center; gap: 18px; font-size: 13px; color: #474B54;">
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #17181C;"></span>一级页面</span>
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #FFFFFF; border: 1px solid #C9C9C2; box-sizing: border-box;"></span>页面内容</span>
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; border-radius: 3px; border: 1.5px dashed #8A8D94; box-sizing: border-box;"></span>抽屉 / 弹窗</span>
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: #E9EDFA; color: #2747B8;">admin</span>仅管理员</span>
+    </div>
+  </header>
+
+  <div style="display: flex; gap: 56px; flex-grow: 1;">
+
+    <section style="width: 840px; flex-shrink: 0; display: flex; flex-direction: column;">
+      <h2 style="margin: 0 0 22px 0; font-size: 18px; font-weight: 700;">站点地图</h2>
+
+      <div style="position: relative; height: 62px;">
+        <div style="position: absolute; left: 150px; top: 11px; width: 96px; height: 40px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: #FFFFFF; border: 1px solid #C9C9C2; font-size: 14px;">登录</div>
+        <svg width="44" height="62" viewBox="0 0 44 62" fill="none" stroke="#8A8D94" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 246px; top: 0;"><path d="M6 31h30M30 25l6 6-6 6"></path></svg>
+        <div style="position: absolute; left: 290px; top: 0; width: 260px; height: 62px; box-sizing: border-box; padding: 10px 16px; display: flex; flex-direction: column; justify-content: center; gap: 3px; border-radius: 10px; background: #17181C; color: #FFFFFF;">
+          <strong style="font-size: 15px;">云枢 · 主框架</strong>
+          <span style="font-size: 12px; color: #C8CAD0;">侧边导航 · 顶栏（全局搜索、修改密码、退出）</span>
+        </div>
+      </div>
+      <div style="width: 1.5px; height: 22px; margin: 0 auto; background: #8A8D94;"></div>
+      <div style="height: 0; margin: 0 79px; border-top: 1.5px solid #8A8D94;"></div>
+
+      <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px;">
+
+        <div style="display: flex; flex-direction: column; align-items: stretch;">
+          <div style="width: 1.5px; height: 18px; margin: 0 auto; background: #8A8D94;"></div>
+          <div style="padding: 10px 12px; border-radius: 8px; background: #17181C; color: #FFFFFF; display: flex; flex-direction: column; gap: 2px;">
+            <strong style="font-size: 15px;">概览</strong>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #C8CAD0;">/dashboard</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px;">关键指标卡片</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px;">云 × 类型资源分布</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px;">CPU 均值趋势</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px;">CPU Top10</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px;">闲置主机</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px;">30 天内到期</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px;">最近同步</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: stretch;">
+          <div style="width: 1.5px; height: 18px; margin: 0 auto; background: #8A8D94;"></div>
+          <div style="padding: 10px 12px; border-radius: 8px; background: #17181C; color: #FFFFFF; display: flex; flex-direction: column; gap: 2px;">
+            <strong style="font-size: 15px;">资源中心</strong>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #C8CAD0;">/resources</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px; line-height: 1.5;">Tab：云主机 · 数据库 · 负载均衡 · 对象存储</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px; line-height: 1.5;">筛选：云 · 账号 · 地域 · 状态 · 关键字</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px;">资源列表（分页、排序）</div>
+            <div style="padding: 10px; border-radius: 8px; border: 1.5px dashed #8A8D94; display: flex; flex-direction: column; gap: 6px;">
+              <strong style="font-size: 13px;">资源详情抽屉</strong>
+              <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                <span style="padding: 3px 7px; border-radius: 5px; background: #EFEFEA; font-size: 12px;">基本信息</span>
+                <span style="padding: 3px 7px; border-radius: 5px; background: #EFEFEA; font-size: 12px;">标签</span>
+                <span style="padding: 3px 7px; border-radius: 5px; background: #EFEFEA; font-size: 12px;">监控</span>
+                <span style="padding: 3px 7px; border-radius: 5px; background: #EFEFEA; font-size: 12px;">原始数据</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: stretch;">
+          <div style="width: 1.5px; height: 18px; margin: 0 auto; background: #8A8D94;"></div>
+          <div style="padding: 10px 12px; border-radius: 8px; background: #17181C; color: #FFFFFF; display: flex; flex-direction: column; gap: 2px;">
+            <strong style="font-size: 15px;">监控中心</strong>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #C8CAD0;">/monitor</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px;">选择资源类型与指标</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px; line-height: 1.5;">多选资源（跨云、跨账号）</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px; line-height: 1.5;">时间范围 1h / 6h / 24h / 7d</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px;">叠加对比曲线</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: stretch;">
+          <div style="width: 1.5px; height: 18px; margin: 0 auto; background: #8A8D94;"></div>
+          <div style="padding: 10px 12px; border-radius: 8px; background: #17181C; color: #FFFFFF; display: flex; flex-direction: column; gap: 2px;">
+            <strong style="font-size: 15px;">云账号</strong>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #C8CAD0;">/accounts</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px; line-height: 1.5;">账号列表与同步状态</div>
+            <div style="padding: 10px; border-radius: 8px; border: 1.5px dashed #8A8D94; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 6px;"><strong style="font-size: 13px;">新增 / 编辑</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 1px 5px; border-radius: 4px; background: #E9EDFA; color: #2747B8;">admin</span></div>
+              <span style="font-size: 12px; line-height: 1.5; color: #50545D;">填写凭证 → 测试连接 → 选择地域</span>
+            </div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px; display: flex; align-items: center; gap: 6px;">立即同步<span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 1px 5px; border-radius: 4px; background: #E9EDFA; color: #2747B8;">admin</span></div>
+            <div style="padding: 10px; border-radius: 8px; border: 1.5px dashed #8A8D94; display: flex; flex-direction: column; gap: 4px;">
+              <strong style="font-size: 13px;">同步历史</strong>
+              <span style="font-size: 12px; line-height: 1.5; color: #50545D;">每次任务的数量与错误明细</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; align-items: stretch;">
+          <div style="width: 1.5px; height: 18px; margin: 0 auto; background: #8A8D94;"></div>
+          <div style="padding: 10px 12px; border-radius: 8px; background: #17181C; color: #FFFFFF; display: flex; flex-direction: column; gap: 2px;">
+            <div style="display: flex; align-items: center; gap: 6px;"><strong style="font-size: 15px;">系统管理</strong><span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 1px 5px; border-radius: 4px; background: #33363E; color: #D7DBF5;">admin</span></div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #C8CAD0;">/system</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px; line-height: 1.5;">用户管理：新增、改角色、禁用</div>
+            <div style="padding: 8px 10px; border-radius: 7px; background: #FFFFFF; border: 1px solid #E2E2DC; font-size: 13px; line-height: 1.5;">审计日志：登录、账号变更、手动同步</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 34px;">
+      <section style="display: flex; flex-direction: column; gap: 18px;">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 700;">核心流程：接入一个云账号</h2>
+        <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column;">
+          <li style="display: flex; gap: 14px; min-height: 48px;">
+            <div style="display: flex; flex-direction: column; align-items: center; width: 28px; flex-shrink: 0;"><span style="width: 28px; height: 28px; border-radius: 50%; background: #17181C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; flex-shrink: 0;">1</span><span style="width: 1.5px; flex-grow: 1; background: #CFCFC8;"></span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px; padding-top: 3px; padding-bottom: 12px;"><strong style="font-size: 15px;">新增账号</strong><span style="font-size: 13px; color: #50545D;">选择 AWS 或阿里云，填写账号名称</span></div>
+          </li>
+          <li style="display: flex; gap: 14px; min-height: 48px;">
+            <div style="display: flex; flex-direction: column; align-items: center; width: 28px; flex-shrink: 0;"><span style="width: 28px; height: 28px; border-radius: 50%; background: #17181C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; flex-shrink: 0;">2</span><span style="width: 1.5px; flex-grow: 1; background: #CFCFC8;"></span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px; padding-top: 3px; padding-bottom: 12px;"><strong style="font-size: 15px;">填写凭证</strong><span style="font-size: 13px; color: #50545D;">AK / SK；可选角色 ARN；AWS 可选中国区</span></div>
+          </li>
+          <li style="display: flex; gap: 14px; min-height: 48px;">
+            <div style="display: flex; flex-direction: column; align-items: center; width: 28px; flex-shrink: 0;"><span style="width: 28px; height: 28px; border-radius: 50%; background: #2747B8; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; flex-shrink: 0;">3</span><span style="width: 1.5px; flex-grow: 1; background: #CFCFC8;"></span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px; padding-top: 3px; padding-bottom: 12px;"><strong style="font-size: 15px;">测试连接</strong><span style="font-size: 13px; color: #50545D;">通过 STS 校验，返回云账号 UID 和可用地域</span></div>
+          </li>
+          <li style="display: flex; gap: 14px; min-height: 48px;">
+            <div style="display: flex; flex-direction: column; align-items: center; width: 28px; flex-shrink: 0;"><span style="width: 28px; height: 28px; border-radius: 50%; background: #17181C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; flex-shrink: 0;">4</span><span style="width: 1.5px; flex-grow: 1; background: #CFCFC8;"></span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px; padding-top: 3px; padding-bottom: 12px;"><strong style="font-size: 15px;">选择地域</strong><span style="font-size: 13px; color: #50545D;">默认同步全部已开通地域</span></div>
+          </li>
+          <li style="display: flex; gap: 14px; min-height: 48px;">
+            <div style="display: flex; flex-direction: column; align-items: center; width: 28px; flex-shrink: 0;"><span style="width: 28px; height: 28px; border-radius: 50%; background: #17181C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; flex-shrink: 0;">5</span><span style="width: 1.5px; flex-grow: 1; background: #CFCFC8;"></span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px; padding-top: 3px; padding-bottom: 12px;"><strong style="font-size: 15px;">保存并同步</strong><span style="font-size: 13px; color: #50545D;">后台并发采集，生成一条同步任务</span></div>
+          </li>
+          <li style="display: flex; gap: 14px;">
+            <div style="display: flex; flex-direction: column; align-items: center; width: 28px; flex-shrink: 0;"><span style="width: 28px; height: 28px; border-radius: 50%; background: #17181C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; flex-shrink: 0;">6</span></div>
+            <div style="display: flex; flex-direction: column; gap: 2px; padding-top: 3px;"><strong style="font-size: 15px;">查看资源</strong><span style="font-size: 13px; color: #50545D;">在资源中心检索，打开详情看监控</span></div>
+          </li>
+        </ol>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 700;">角色权限</h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; background: #FFFFFF; border: 1px solid #E2E2DC;">
+          <thead>
+            <tr style="text-align: left; color: #50545D;">
+              <th style="padding: 9px 12px; font-weight: 500; border-bottom: 1px solid #E2E2DC;">权限</th>
+              <th style="padding: 9px 12px; font-weight: 500; border-bottom: 1px solid #E2E2DC; width: 64px; text-align: center; font-family: 'JetBrains Mono', monospace;">admin</th>
+              <th style="padding: 9px 12px; font-weight: 500; border-bottom: 1px solid #E2E2DC; width: 64px; text-align: center; font-family: 'JetBrains Mono', monospace;">viewer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA;">查看概览、资源、监控</td><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA; text-align: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2747B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="允许"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></td><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA; text-align: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2747B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="允许"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></td></tr>
+            <tr><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA;">修改自己的密码</td><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA; text-align: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2747B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="允许"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></td><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA; text-align: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2747B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="允许"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></td></tr>
+            <tr><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA;">新增 / 编辑 / 删除云账号</td><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA; text-align: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2747B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="允许"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></td><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA; text-align: center; color: #8A8D94;">—</td></tr>
+            <tr><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA;">触发同步</td><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA; text-align: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2747B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="允许"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></td><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA; text-align: center; color: #8A8D94;">—</td></tr>
+            <tr><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA;">用户管理</td><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA; text-align: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2747B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="允许"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></td><td style="padding: 8px 12px; border-bottom: 1px solid #EFEFEA; text-align: center; color: #8A8D94;">—</td></tr>
+            <tr><td style="padding: 8px 12px;">查看审计日志</td><td style="padding: 8px 12px; text-align: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2747B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="允许"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></td><td style="padding: 8px 12px; text-align: center; color: #8A8D94;">—</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

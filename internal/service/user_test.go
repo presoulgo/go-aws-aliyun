@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/presoulgo/go-aws-aliyun/internal/apperr"
 	"github.com/presoulgo/go-aws-aliyun/internal/model"
@@ -74,7 +75,7 @@ func TestLoginLockout(t *testing.T) {
 
 func TestUserManagementGuards(t *testing.T) {
 	db := newTestDB(t)
-	users, _ := newTestUserService(t, db)
+	users, audit := newTestUserService(t, db)
 	_, pw, _ := users.EnsureAdmin("")
 	login, _ := users.Login("admin", pw, "")
 	admin := Actor{UserID: login.User.ID, Username: "admin", Role: model.RoleAdmin}
@@ -112,8 +113,13 @@ func TestUserManagementGuards(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	start := time.Now()
 	if _, err := users.Update(admin, bob.ID, UpdateUserInput{Disabled: &disabled}); err != nil {
 		t.Fatal(err)
+	}
+	// The audit write must not wait on the update's own transaction lock.
+	if d := time.Since(start); d > 2*time.Second {
+		t.Fatalf("disabling a user took %v", d)
 	}
 	if _, err := users.Authenticate(bobLogin.Token); status(err) != 401 {
 		t.Fatalf("disabled user's token must fail: %v", err)
@@ -125,6 +131,24 @@ func TestUserManagementGuards(t *testing.T) {
 	list, err := users.List(admin)
 	if err != nil || len(list) != 2 || !list[0].Me || list[1].Me {
 		t.Fatalf("list: %v %+v", err, list)
+	}
+
+	if err := users.Delete(admin, bob.ID); err != nil {
+		t.Fatal(err)
+	}
+	logs, _, err := audit.List(AuditFilter{Category: model.AuditUser, Page: Page{PageSize: 50}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	actions := map[string]string{}
+	for _, l := range logs {
+		actions[l.Action] = l.Detail
+	}
+	if actions[ActUserDisable] != "状态：正常 → 已禁用" {
+		t.Fatalf("disable not audited: %v", actions)
+	}
+	if _, ok := actions[ActUserDelete]; !ok {
+		t.Fatalf("delete not audited: %v", actions)
 	}
 }
 

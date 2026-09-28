@@ -229,7 +229,7 @@ func (s *ResourceService) Filters(f ResourceFilter) (*Filters, error) {
 		out.Statuses = append(out.Statuses, Option{Value: r.K, Count: r.N})
 	}
 	var accounts []model.CloudAccount
-	if err := s.db.Order("provider, id").Find(&accounts).Error; err != nil {
+	if err := s.db.Order("CASE provider WHEN 'aws' THEN 0 WHEN 'aliyun' THEN 1 ELSE 2 END, id").Find(&accounts).Error; err != nil {
 		return nil, err
 	}
 	for _, a := range accounts {

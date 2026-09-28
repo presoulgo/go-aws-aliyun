@@ -117,7 +117,9 @@ func (g *gen) markExpiring(d *accountData, heroIDs map[string]bool) {
 	step := max(1, len(eligible)/(g.prof.expiring+1))
 	for k := 0; k < g.prof.expiring && k*step < len(eligible); k++ {
 		r := &d.resources[eligible[len(eligible)-1-k*step]]
-		t := g.expireIn(9 + (k*7)%20)
+		// 27–30 days: after the prototype's four reminders (8/13/21/26 days),
+		// so the dashboard list shows exactly those first.
+		t := g.expireIn(27 + k%4)
 		r.ExpireAt = &t
 	}
 }
@@ -199,9 +201,13 @@ func (g *gen) publicIP() string {
 	return fmt.Sprintf("%d.%d.%d.%d", []int{39, 47, 101, 106, 116, 120, 139}[g.rng.IntN(7)], g.rng.IntN(256), g.rng.IntN(256), 1+g.rng.IntN(254))
 }
 
+// idleShare of generated running hosts are idle; with the demo profiles this
+// gives the prototype's 37 idle hosts.
+var idleShare = 0.102
+
 func (g *gen) cpuBase() float64 {
 	switch x := g.rng.Float64(); {
-	case x < 0.076:
+	case x < idleShare:
 		return 0.8 + g.rng.Float64()*3.7
 	case x < 0.2:
 		// Busy, but below the prototype's top hosts even at the daily peak.
@@ -246,7 +252,7 @@ func (g *gen) resource(typ string) (cloud.Resource, float64) {
 			if x > 0.93 {
 				raw, status = "stopped", model.StatusStopped
 			} else if x > 0.92 {
-				raw, status = "pending", model.StatusPending
+				raw, status = "pending", model.StatusStarting
 			}
 		} else {
 			id = "i-" + g.aliPrefix(region) + g.randString(alnum, 17)
@@ -438,7 +444,7 @@ func (g *gen) heroResource(h hero) (cloud.Resource, float64) {
 		"running": model.StatusRunning, "Running": model.StatusRunning, "available": model.StatusRunning,
 		"active": model.StatusRunning, "Active": model.StatusRunning,
 		"stopped": model.StatusStopped, "Stopped": model.StatusStopped, "inactive": model.StatusStopped,
-		"pending": model.StatusPending, "Starting": model.StatusStarting, "modifying": model.StatusChanging,
+		"pending": model.StatusStarting, "Starting": model.StatusStarting, "modifying": model.StatusChanging,
 	}[h.status]
 	if h.typ == model.TypeBucket {
 		status = model.StatusRunning
@@ -494,7 +500,11 @@ func (g *gen) heroResource(h hero) (cloud.Resource, float64) {
 	}
 	zone := ""
 	if h.typ != model.TypeBucket && h.typ != model.TypeLB {
+		// Always draw from the generator so the rest of the data stays the same.
 		zone = g.zone(h.region)
+		if h.zone != "" {
+			zone = h.zone
+		}
 	}
 	r := cloud.Resource{
 		Type: h.typ, Region: h.region, Zone: zone, ResourceID: id, Name: h.name,

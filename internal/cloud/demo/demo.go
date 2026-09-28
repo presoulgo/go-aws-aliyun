@@ -165,7 +165,7 @@ func (p *Provider) CPUSnapshot(ctx context.Context, cred cloud.Credential, regio
 		hourly := map[int64]float64{}
 		for h := last.Add(-23 * time.Hour); !h.After(last); h = h.Add(time.Hour) {
 			if isHero {
-				hourly[h.Unix()] = round1(heroCPUAt(hv, seed, h, region))
+				hourly[h.Unix()] = round1(heroCPUAt(hv, seed, h, now, region))
 			} else {
 				hourly[h.Unix()] = round1(cpuAt(base, seed, h, region))
 			}
@@ -199,6 +199,7 @@ func (p *Provider) QueryMetrics(ctx context.Context, cred cloud.Credential, ref 
 		period = time.Minute
 	}
 	status := data.status[ref.ResourceID]
+	now := p.now()
 	var out []cloud.Series
 	for _, key := range q.Keys {
 		if !supported[key] {
@@ -211,7 +212,7 @@ func (p *Provider) QueryMetrics(ctx context.Context, cred cloud.Credential, ref 
 				if t.Before(q.Start) {
 					continue
 				}
-				v := metricAt(ref, key, data, t)
+				v := metricAt(ref, key, data, t, now)
 				s.Points = append(s.Points, cloud.Point{float64(t.UnixMilli()), round3(v)})
 			}
 		}
@@ -347,12 +348,17 @@ func cpuAt(base float64, seed uint64, t time.Time, region string) float64 {
 // heroCPUAt keeps the prototype's busy hosts close to their headline value
 // (for example prod-api-07 at 92.4%), so the dashboard Top 5 and the metric
 // charts tell the same story.
-func heroCPUAt(v float64, seed uint64, t time.Time, region string) float64 {
-	swing := math.Min(0.03*v, 0.9*(99-v))
-	return clamp(v+swing*daily(t, region)+2.2*smooth(seed, t), 0.3, 99.5)
+// The curve passes through v at now and follows the daily cycle around it;
+// the amplitude shrinks when that would push it past 98% or below 3%.
+func heroCPUAt(v float64, seed uint64, t, now time.Time, region string) float64 {
+	dn := daily(now, region)
+	amp := 0.18 * v
+	amp = math.Min(amp, (98-v)/math.Max(0.05, 1-dn))
+	amp = math.Min(amp, (v-3)/math.Max(0.05, 1+dn))
+	return clamp(v+amp*(daily(t, region)-dn)+1.8*smooth(seed, t), 0.3, 99.5)
 }
 
-func metricAt(ref cloud.ResourceRef, key string, d *accountData, t time.Time) float64 {
+func metricAt(ref cloud.ResourceRef, key string, d *accountData, t, now time.Time) float64 {
 	seed := hash64(ref.ResourceID, key)
 	n := smooth(seed, t)
 	day := daily(t, ref.Region)
@@ -362,7 +368,7 @@ func metricAt(ref cloud.ResourceRef, key string, d *accountData, t time.Time) fl
 		switch key {
 		case cloud.MetricCPU:
 			if hv, ok := heroCPU(ref.ResourceID, d); ok {
-				return heroCPUAt(hv, hash64(ref.ResourceID, "cpu"), t, ref.Region)
+				return heroCPUAt(hv, hash64(ref.ResourceID, "cpu"), t, now, ref.Region)
 			}
 			base := d.cpuBase[ref.ResourceID]
 			if base == 0 {

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>审计日志</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;font-family:'IBM Plex Sans','Noto Sans SC','PingFang SC',sans-serif;color:#151821}
+a{color:#2443B5}a:hover{color:#18318C}
+input::placeholder{color:#8A91A0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; background: #F4F5F7; color: #151821; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif;">
+  <dc-import name="Sidebar" active="audit" hint-size="232px,900px"></dc-import>
+  <div style="width: 1208px; flex-shrink: 0; display: flex; flex-direction: column;">
+    <dc-import name="Topbar" hint-size="1208px,64px"></dc-import>
+    <main style="height: 836px; box-sizing: border-box; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="height: 44px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 600;">审计日志</h1>
+        <span style="font-size: 13px; color: #555C6B;">记录登录、云账号变更、手动同步和用户管理操作 · 只增不改</span>
+      </div>
+
+      <section style="flex-grow: 1; box-sizing: border-box; display: flex; flex-direction: column; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; overflow: hidden;">
+        <div style="height: 60px; flex-shrink: 0; box-sizing: border-box; padding: 0 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #EEF0F3;">
+          <div style="display: flex; gap: 2px; padding: 3px; border-radius: 9px; background: #E9EBEF;">
+            <sc-for list="{{ranges}}" as="r" hint-placeholder-count="3">
+              <button type="button" aria-pressed="{{r.on}}" onClick="{{r.pick}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 6px; font-family: inherit; font-size: 13px; cursor: pointer; background: {{r.bg}}; color: {{r.fg}}; font-weight: {{r.fw}};">{{r.label}}</button>
+            </sc-for>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <sc-for list="{{cats}}" as="c" hint-placeholder-count="5">
+              <button type="button" aria-pressed="{{c.on}}" onClick="{{c.pick}}" style="height: 32px; padding: 0 12px; border-radius: 999px; font-family: inherit; font-size: 13px; cursor: pointer; border: 1px solid {{c.border}}; background: {{c.bg}}; color: {{c.fg}};">{{c.label}}</button>
+            </sc-for>
+          </div>
+          <label style="margin-left: auto; display: flex; align-items: center; gap: 8px; width: 280px; height: 36px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; color: #6B7280;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+            <input type="search" aria-label="搜索审计日志" placeholder="搜索操作人、对象或 IP" style="flex-grow: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #151821; font-family: inherit; font-size: 13px;">
+          </label>
+        </div>
+
+        <div style="height: 40px; flex-shrink: 0; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: 150px 130px 120px 190px minmax(0, 1fr) 120px; column-gap: 12px; align-items: center; background: #F7F8FA; border-bottom: 1px solid #EEF0F3; font-size: 12px; color: #555C6B;">
+          <span>时间</span><span>操作人</span><span>操作</span><span>对象</span><span>详情</span><span>来源 IP</span>
+        </div>
+        <sc-for list="{{logs}}" as="l" hint-placeholder-count="12">
+          <div style="height: 46px; flex-shrink: 0; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: 150px 130px 120px 190px minmax(0, 1fr) 120px; column-gap: 12px; align-items: center; border-bottom: 1px solid #EEF0F3; font-size: 13px;">
+            <span style="font-size: 12px; color: #3F4654;">{{l.time}}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">{{l.user}}</span>
+            <span style="justify-self: start; padding: 2px 8px; border-radius: 5px; font-size: 12px; background: {{l.tagBg}}; color: {{l.tagFg}};">{{l.action}}</span>
+            <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{l.target}}</span>
+            <span style="min-width: 0; color: #555C6B; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{l.detail}}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #555C6B;">{{l.ip}}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+          <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #6B7280;">这个时间范围内没有此类操作</div>
+        </sc-if>
+        <div style="margin-top: auto; height: 48px; flex-shrink: 0; box-sizing: border-box; padding: 0 20px; display: flex; align-items: center; border-top: 1px solid #EEF0F3; font-size: 13px; color: #555C6B;">
+          <span>共 {{count}} 条</span>
+          <span style="margin-left: auto; font-size: 12px; color: #6B7280;">日志保留 180 天</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var range = st.range || '7d';
+    var cat = st.cat || 'all';
+
+    var style = {
+      login: { bg: '#F1F3F7', fg: '#3F4654' },
+      account: { bg: '#EDF1FD', fg: '#2443B5' },
+      sync: { bg: '#E9F6EF', fg: '#16804A' },
+      user: { bg: '#F3EAFB', fg: '#6B2FA0' },
+      warn: { bg: '#FFF1DC', fg: '#8A4B00' },
+      danger: { bg: '#FDECEA', fg: '#B42318' }
+    };
+    var all = [
+      { today: true, time: '今天 12:02:11', user: 'admin', cat: 'sync', action: '手动同步', target: 'AWS 生产账号', detail: '同步任务 #4821 · 9 个地域', ip: '10.0.8.21' },
+      { today: true, time: '今天 11:48:30', user: 'admin', cat: 'account', action: '修改云账号', target: '阿里云 主账号', detail: '同步地域：6 个指定地域 → 全部地域', ip: '10.0.8.21' },
+      { today: true, time: '今天 11:40:02', user: 'sre.oncall', cat: 'login', action: '登录成功', target: '—', detail: '', ip: '10.0.9.114' },
+      { today: true, time: '今天 11:21:47', user: 'dev.backend', cat: 'login', action: '登录失败', target: '—', detail: '密码错误（连续第 2 次，5 次后锁定 5 分钟）', ip: '10.0.12.7', tone: 'warn' },
+      { today: true, time: '今天 10:05:13', user: 'admin', cat: 'user', action: '新增用户', target: 'qa.viewer', detail: '角色：只读', ip: '10.0.8.21' },
+      { today: true, time: '今天 09:31:56', user: 'admin', cat: 'account', action: '新增云账号', target: 'AWS 数据平台', detail: '测试连接通过 · AssumeRole · 3 个地域', ip: '10.0.8.21' },
+      { today: true, time: '今天 09:12:40', user: 'admin', cat: 'login', action: '登录成功', target: '—', detail: '', ip: '10.0.8.21' },
+      { today: true, time: '今天 08:47:09', user: 'ops.lead', cat: 'login', action: '登录成功', target: '—', detail: '', ip: '10.0.8.35' },
+      { today: false, time: '昨天 18:44:21', user: 'ops.lead', cat: 'user', action: '修改密码', target: 'ops.lead', detail: '本人修改', ip: '10.0.8.35' },
+      { today: false, time: '昨天 17:20:05', user: 'admin', cat: 'user', action: '禁用用户', target: 'intern.temp', detail: '状态：正常 → 已禁用', ip: '10.0.8.21' },
+      { today: false, time: '昨天 16:02:38', user: 'admin', cat: 'account', action: '删除云账号', target: '阿里云 旧测试账号', detail: '同时删除 212 项资源和 96 条同步记录', ip: '10.0.8.21', tone: 'danger' },
+      { today: false, time: '昨天 15:30:44', user: 'admin', cat: 'sync', action: '手动同步', target: '阿里云 电商业务', detail: '同步任务 #4702 · 4 个地域', ip: '10.0.8.21' }
+    ];
+    var logs = all.filter(function (l) {
+      if (range === 'today' && !l.today) return false;
+      return cat === 'all' || l.cat === cat;
+    }).map(function (l) {
+      var s = style[l.tone || l.cat];
+      return Object.assign({}, l, { tagBg: s.bg, tagFg: s.fg, detail: l.detail || '—' });
+    });
+
+    var ranges = [
+      { key: 'today', label: '今天' },
+      { key: '7d', label: '近 7 天' },
+      { key: '30d', label: '近 30 天' }
+    ].map(function (r) {
+      var on = r.key === range;
+      return {
+        label: r.label, on: on ? 'true' : 'false',
+        bg: on ? '#FFFFFF' : 'transparent', fg: on ? '#151821' : '#555C6B', fw: on ? '500' : '400',
+        pick: function () { self.setState({ range: r.key }); }
+      };
+    });
+    var cats = [
+      { key: 'all', label: '全部操作' },
+      { key: 'login', label: '登录' },
+      { key: 'account', label: '云账号' },
+      { key: 'sync', label: '同步' },
+      { key: 'user', label: '用户' }
+    ].map(function (c) {
+      var on = c.key === cat;
+      return {
+        label: c.label, on: on ? 'true' : 'false',
+        border: on ? '#2443B5' : '#DDE1E7', bg: on ? '#EDF1FD' : '#FFFFFF', fg: on ? '#2443B5' : '#3F4654',
+        pick: function () { self.setState({ cat: c.key }); }
+      };
+    });
+    var totals = { today: 8, '7d': 146, '30d': 583 };
+    return {
+      ranges: ranges,
+      cats: cats,
+      logs: logs,
+      empty: logs.length === 0,
+      count: cat === 'all' ? totals[range] : logs.length
+    };
+  }
+}
+</script>
+</body>
+</html>

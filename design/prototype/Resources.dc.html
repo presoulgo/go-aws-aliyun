@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>资源中心</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;font-family:'IBM Plex Sans','Noto Sans SC','PingFang SC',sans-serif;color:#151821}
+a{color:#2443B5}a:hover{color:#18318C}
+input::placeholder{color:#8A91A0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; background: #F4F5F7; color: #151821; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif;">
+  <dc-import name="Sidebar" active="resources" hint-size="232px,900px"></dc-import>
+  <div style="width: 1208px; flex-shrink: 0; display: flex; flex-direction: column;">
+    <dc-import name="Topbar" hint-size="1208px,64px"></dc-import>
+    <main style="height: 836px; box-sizing: border-box; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-size: 22px; font-weight: 600;">资源中心</h1>
+          <span style="font-size: 13px; color: #555C6B;">共 784 项 · 6 个云账号定时同步 · 数据更新于 2 分钟前</span>
+        </div>
+        <button type="button" style="height: 36px; padding: 0 14px; display: flex; align-items: center; gap: 8px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: inherit; font-size: 13px; cursor: pointer;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>
+          刷新
+        </button>
+      </div>
+
+      <section style="flex-grow: 1; box-sizing: border-box; display: flex; flex-direction: column; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; overflow: hidden;">
+
+        <div role="tablist" aria-label="资源类型" style="height: 48px; flex-shrink: 0; box-sizing: border-box; padding: 0 20px; display: flex; align-items: stretch; gap: 28px; border-bottom: 1px solid #EEF0F3;">
+          <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+            <button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="display: flex; align-items: center; gap: 8px; padding: 0 2px; border: 0; background: transparent; font-family: inherit; font-size: 14px; cursor: pointer; color: {{t.fg}}; font-weight: {{t.fw}}; box-shadow: {{t.bar}};">
+              {{t.label}}
+              <span style="padding: 0 7px; border-radius: 999px; font-size: 12px; line-height: 20px; background: {{t.countBg}}; color: {{t.countFg}};">{{t.count}}</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="height: 60px; flex-shrink: 0; box-sizing: border-box; padding: 0 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #EEF0F3;">
+          <div style="display: flex; gap: 2px; padding: 3px; border-radius: 9px; background: #E9EBEF;">
+            <sc-for list="{{clouds}}" as="c" hint-placeholder-count="3">
+              <button type="button" aria-pressed="{{c.on}}" onClick="{{c.pick}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 6px; font-family: inherit; font-size: 13px; cursor: pointer; background: {{c.bg}}; color: {{c.fg}}; font-weight: {{c.fw}};">{{c.label}}</button>
+            </sc-for>
+          </div>
+          <button type="button" style="height: 36px; padding: 0 12px; display: flex; align-items: center; gap: 8px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #3F4654; font-family: inherit; font-size: 13px; cursor: pointer;">账号：全部<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <button type="button" style="height: 36px; padding: 0 12px; display: flex; align-items: center; gap: 8px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #3F4654; font-family: inherit; font-size: 13px; cursor: pointer;">地域：全部<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <button type="button" style="height: 36px; padding: 0 12px; display: flex; align-items: center; gap: 8px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #3F4654; font-family: inherit; font-size: 13px; cursor: pointer;">状态：全部<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <label style="display: flex; align-items: center; gap: 8px; width: 300px; height: 36px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #6B7280;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+            <input type="search" aria-label="筛选资源" placeholder="名称、ID、IP 或 标签 env:prod" style="flex-grow: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #151821; font-family: inherit; font-size: 13px;">
+          </label>
+          <button type="button" onClick="{{reset}}" style="height: 36px; padding: 0 8px; border: 0; background: transparent; color: #2443B5; font-family: inherit; font-size: 13px; cursor: pointer;">重置</button>
+          <span style="margin-left: auto; font-size: 13px; color: #555C6B;">共 {{total}} 条</span>
+        </div>
+
+        <sc-if value="{{show.vm}}" hint-placeholder-val="{{true}}">
+          <div style="height: 40px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 120px 136px 84px 140px 132px 96px 92px; column-gap: 12px; align-items: center; background: #F7F8FA; border-bottom: 1px solid #EEF0F3; font-size: 12px; color: #555C6B;">
+            <span>名称 / 实例 ID</span><span>云 · 账号</span><span>地域 · 可用区</span><span>状态</span><span>规格</span><span>私网 / 公网 IP</span>
+            <button type="button" style="display: flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: #2443B5; font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer;">CPU · 1h<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"></path></svg></button>
+            <span>到期</span>
+          </div>
+          <sc-for list="{{vm}}" as="r" hint-placeholder-count="9">
+            <div style="height: 56px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 120px 136px 84px 140px 132px 96px 92px; column-gap: 12px; align-items: center; border-bottom: 1px solid #EEF0F3; font-size: 13px;">
+              <span style="min-width: 0; display: flex; flex-direction: column; gap: 2px;"><a href="ResourceDetail.dc.html" style="font-weight: 500; text-decoration: none;">{{r.name}}</a><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">{{r.id}}</span></span>
+              <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;"><span style="padding: 0 6px; border-radius: 5px; font-size: 12px; line-height: 18px; background: {{r.tagBg}}; color: {{r.tagFg}};">{{r.cloud}}</span><span style="font-size: 12px; color: #555C6B;">{{r.account}}</span></span>
+              <span style="display: flex; flex-direction: column; gap: 2px;"><span>{{r.region}}</span><span style="font-size: 12px; color: #6B7280;">{{r.zone}}</span></span>
+              <span style="justify-self: start; display: flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: {{r.st.bg}}; color: {{r.st.fg}};"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{r.st.dot}};"></span>{{r.st.label}}</span>
+              <span style="display: flex; flex-direction: column; gap: 2px;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">{{r.spec}}</span><span style="font-size: 11px; color: #6B7280;">{{r.size}}</span></span>
+              <span style="display: flex; flex-direction: column; gap: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 12px;"><span>{{r.priv}}</span><span style="color: #6B7280;">{{r.pub}}</span></span>
+              <span style="display: flex; flex-direction: column; gap: 4px;"><span style="display: flex; align-items: center; gap: 6px;"><span style="font-weight: 600; color: {{r.cpuColor}};">{{r.cpuText}}</span><sc-if value="{{r.idle}}" hint-placeholder-val="{{false}}"><span style="padding: 0 5px; border-radius: 4px; font-size: 11px; background: #F1F3F7; color: #3F4654;">闲置</span></sc-if></span><span style="display: block; width: 72px; height: 4px; border-radius: 2px; background: #EEF0F3;"><span style="display: block; height: 4px; border-radius: 2px; width: {{r.cpuPct}}%; background: {{r.cpuBar}};"></span></span></span>
+              <span style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;"><span style="color: {{r.expColor}};">{{r.exp}}</span><span style="color: #6B7280;">{{r.expSub}}</span></span>
+            </div>
+          </sc-for>
+        </sc-if>
+
+        <sc-if value="{{show.rds}}" hint-placeholder-val="{{false}}">
+          <div style="height: 40px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 120px 136px 84px 150px 190px 90px 110px; column-gap: 12px; align-items: center; background: #F7F8FA; border-bottom: 1px solid #EEF0F3; font-size: 12px; color: #555C6B;">
+            <span>名称 / 实例 ID</span><span>云 · 账号</span><span>地域</span><span>状态</span><span>引擎</span><span>规格</span><span>存储</span><span>到期</span>
+          </div>
+          <sc-for list="{{rds}}" as="r" hint-placeholder-count="6">
+            <div style="height: 56px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 120px 136px 84px 150px 190px 90px 110px; column-gap: 12px; align-items: center; border-bottom: 1px solid #EEF0F3; font-size: 13px;">
+              <span style="min-width: 0; display: flex; flex-direction: column; gap: 2px;"><a href="ResourceDetail.dc.html" style="font-weight: 500; text-decoration: none;">{{r.name}}</a><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">{{r.id}}</span></span>
+              <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;"><span style="padding: 0 6px; border-radius: 5px; font-size: 12px; line-height: 18px; background: {{r.tagBg}}; color: {{r.tagFg}};">{{r.cloud}}</span><span style="font-size: 12px; color: #555C6B;">{{r.account}}</span></span>
+              <span>{{r.region}}</span>
+              <span style="justify-self: start; display: flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: {{r.st.bg}}; color: {{r.st.fg}};"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{r.st.dot}};"></span>{{r.st.label}}</span>
+              <span>{{r.engine}}</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">{{r.spec}}</span>
+              <span>{{r.storage}}</span>
+              <span style="display: flex; flex-direction: column; gap: 2px; font-size: 12px;"><span style="color: {{r.expColor}};">{{r.exp}}</span><span style="color: #6B7280;">{{r.expSub}}</span></span>
+            </div>
+          </sc-for>
+        </sc-if>
+
+        <sc-if value="{{show.lb}}" hint-placeholder-val="{{false}}">
+          <div style="height: 40px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 120px 136px 84px 130px minmax(0, 1.5fr) 72px; column-gap: 12px; align-items: center; background: #F7F8FA; border-bottom: 1px solid #EEF0F3; font-size: 12px; color: #555C6B;">
+            <span>名称 / ID</span><span>云 · 账号</span><span>地域</span><span>状态</span><span>类型</span><span>服务地址</span><span>网络</span>
+          </div>
+          <sc-for list="{{lb}}" as="r" hint-placeholder-count="6">
+            <div style="height: 56px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 120px 136px 84px 130px minmax(0, 1.5fr) 72px; column-gap: 12px; align-items: center; border-bottom: 1px solid #EEF0F3; font-size: 13px;">
+              <span style="min-width: 0; display: flex; flex-direction: column; gap: 2px;"><a href="ResourceDetail.dc.html" style="font-weight: 500; text-decoration: none;">{{r.name}}</a><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{r.id}}</span></span>
+              <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;"><span style="padding: 0 6px; border-radius: 5px; font-size: 12px; line-height: 18px; background: {{r.tagBg}}; color: {{r.tagFg}};">{{r.cloud}}</span><span style="font-size: 12px; color: #555C6B;">{{r.account}}</span></span>
+              <span>{{r.region}}</span>
+              <span style="justify-self: start; display: flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: {{r.st.bg}}; color: {{r.st.fg}};"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{r.st.dot}};"></span>{{r.st.label}}</span>
+              <span>{{r.kind}}</span>
+              <span style="min-width: 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{r.addr}}</span>
+              <span>{{r.net}}</span>
+            </div>
+          </sc-for>
+        </sc-if>
+
+        <sc-if value="{{show.bucket}}" hint-placeholder-val="{{false}}">
+          <div style="height: 40px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 120px 136px 120px 100px 130px 110px; column-gap: 12px; align-items: center; background: #F7F8FA; border-bottom: 1px solid #EEF0F3; font-size: 12px; color: #555C6B;">
+            <span>存储桶名称</span><span>云 · 账号</span><span>地域</span><span>存储类型</span><span>容量</span><span>对象数</span><span>创建时间</span>
+          </div>
+          <sc-for list="{{bucket}}" as="r" hint-placeholder-count="6">
+            <div style="height: 56px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 120px 136px 120px 100px 130px 110px; column-gap: 12px; align-items: center; border-bottom: 1px solid #EEF0F3; font-size: 13px;">
+              <a href="ResourceDetail.dc.html" style="min-width: 0; font-weight: 500; text-decoration: none;">{{r.name}}</a>
+              <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;"><span style="padding: 0 6px; border-radius: 5px; font-size: 12px; line-height: 18px; background: {{r.tagBg}}; color: {{r.tagFg}};">{{r.cloud}}</span><span style="font-size: 12px; color: #555C6B;">{{r.account}}</span></span>
+              <span>{{r.region}}</span>
+              <span>{{r.cls}}</span>
+              <span style="font-weight: 500;">{{r.size}}</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">{{r.objects}}</span>
+              <span style="font-size: 12px; color: #555C6B;">{{r.created}}</span>
+            </div>
+          </sc-for>
+        </sc-if>
+
+        <div style="margin-top: auto; height: 56px; flex-shrink: 0; box-sizing: border-box; padding: 0 20px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #EEF0F3; font-size: 13px; color: #555C6B;">
+          <span>共 {{total}} 条，每页 20 条</span>
+          <nav aria-label="分页" style="margin-left: auto; display: flex; align-items: center; gap: 6px;">
+            <button type="button" aria-label="上一页" disabled style="width: 32px; height: 32px; border: 1px solid #E4E7EC; border-radius: 6px; background: #FFFFFF; color: #B5BBC6; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+            <button type="button" aria-current="page" style="min-width: 32px; height: 32px; border: 0; border-radius: 6px; background: #2443B5; color: #FFFFFF; font-family: inherit; font-size: 13px;">1</button>
+            <button type="button" style="min-width: 32px; height: 32px; border: 1px solid #E4E7EC; border-radius: 6px; background: #FFFFFF; color: #3F4654; font-family: inherit; font-size: 13px;">2</button>
+            <button type="button" style="min-width: 32px; height: 32px; border: 1px solid #E4E7EC; border-radius: 6px; background: #FFFFFF; color: #3F4654; font-family: inherit; font-size: 13px;">3</button>
+            <span style="padding: 0 4px;">…</span>
+            <button type="button" style="min-width: 32px; height: 32px; padding: 0 6px; border: 1px solid #E4E7EC; border-radius: 6px; background: #FFFFFF; color: #3F4654; font-family: inherit; font-size: 13px;">{{pages}}</button>
+            <button type="button" aria-label="下一页" style="width: 32px; height: 32px; border: 1px solid #E4E7EC; border-radius: 6px; background: #FFFFFF; color: #3F4654; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+          </nav>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  status(key) {
+    var map = {
+      running: { label: '运行中', bg: '#E9F6EF', fg: '#16804A', dot: '#1F9D5B' },
+      stopped: { label: '已停止', bg: '#F1F3F7', fg: '#3F4654', dot: '#9AA1AD' },
+      starting: { label: '启动中', bg: '#EDF1FD', fg: '#2443B5', dot: '#2443B5' },
+      changing: { label: '变更中', bg: '#EDF1FD', fg: '#2443B5', dot: '#2443B5' }
+    };
+    return map[key];
+  }
+  cloudTag(isAws) {
+    return isAws
+      ? { cloud: 'AWS', tagBg: '#E6ECF5', tagFg: '#1B2F52' }
+      : { cloud: '阿里云', tagBg: '#FDEEE2', tagFg: '#A94600' };
+  }
+  expiry(date, days) {
+    if (!date) return { exp: '按量付费', expSub: '', expColor: '#555C6B' };
+    if (days <= 30) return { exp: date, expSub: days + ' 天后到期', expColor: '#8A4B00' };
+    return { exp: date, expSub: '包年包月', expColor: '#151821' };
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var tab = st.tab || 'vm';
+    var cloud = st.cloud || 'all';
+    var keep = function (r) { return cloud === 'all' || (cloud === 'aws') === r.aws; };
+
+    var counts = {
+      vm: { all: 486, aws: 214, ali: 272 },
+      rds: { all: 58, aws: 24, ali: 34 },
+      lb: { all: 73, aws: 31, ali: 42 },
+      bucket: { all: 167, aws: 95, ali: 72 }
+    };
+    var tabs = [
+      { key: 'vm', label: '云主机' },
+      { key: 'rds', label: '数据库' },
+      { key: 'lb', label: '负载均衡' },
+      { key: 'bucket', label: '对象存储' }
+    ].map(function (t) {
+      var on = t.key === tab;
+      return {
+        label: t.label,
+        count: counts[t.key][cloud],
+        on: on ? 'true' : 'false',
+        fg: on ? '#2443B5' : '#3F4654',
+        fw: on ? '600' : '400',
+        bar: on ? 'inset 0 -2px 0 #2443B5' : 'none',
+        countBg: on ? '#EDF1FD' : '#F1F3F7',
+        countFg: on ? '#2443B5' : '#555C6B',
+        pick: function () { self.setState({ tab: t.key }); }
+      };
+    });
+    var clouds = [
+      { key: 'all', label: '全部云' },
+      { key: 'aws', label: 'AWS' },
+      { key: 'ali', label: '阿里云' }
+    ].map(function (c) {
+      var on = c.key === cloud;
+      return {
+        label: c.label,
+        on: on ? 'true' : 'false',
+        bg: on ? '#FFFFFF' : 'transparent',
+        fg: on ? '#151821' : '#555C6B',
+        fw: on ? '500' : '400',
+        pick: function () { self.setState({ cloud: c.key }); }
+      };
+    });
+
+    var vm = [
+      { name: 'prod-api-07', id: 'i-bp1f3k9x2m7qa8d0c1e', aws: false, account: '电商业务', region: 'cn-hangzhou', zone: '可用区 H', s: 'running', spec: 'ecs.c7.2xlarge', size: '8 vCPU · 16 GiB', priv: '10.12.4.21', pub: '47.98.113.20', cpu: 92.4, date: '2027-03-14', days: 167 },
+      { name: 'order-worker-03', id: 'i-0a7f3c29e1b84d5f6', aws: true, account: '生产账号', region: 'us-east-1', zone: 'us-east-1a', s: 'running', spec: 'c6i.2xlarge', size: '8 vCPU · 16 GiB', priv: '172.31.8.144', pub: '54.210.33.17', cpu: 88.1 },
+      { name: 'es-data-02', id: 'i-uf6d0n3v8r2k5t1w9q', aws: false, account: '主账号', region: 'cn-shanghai', zone: '可用区 L', s: 'running', spec: 'ecs.r7.4xlarge', size: '16 vCPU · 128 GiB', priv: '10.20.1.9', pub: '—', cpu: 83.6, date: '2026-12-02', days: 65 },
+      { name: 'ingest-node-11', id: 'i-05c2e9b7d41a3f8e2', aws: true, account: '数据平台', region: 'ap-northeast-1', zone: 'ap-northeast-1c', s: 'running', spec: 'm6i.xlarge', size: '4 vCPU · 16 GiB', priv: '10.40.3.77', pub: '—', cpu: 79.2 },
+      { name: 'prod-web-12', id: 'i-bp18w2l5q0z7n4m6x3', aws: false, account: '电商业务', region: 'cn-shanghai', zone: '可用区 G', s: 'running', spec: 'ecs.g7.xlarge', size: '4 vCPU · 16 GiB', priv: '10.20.6.12', pub: '139.196.8.45', cpu: 41.7, date: '2026-10-11', days: 13 },
+      { name: 'bastion-01', id: 'i-0f19d3a6c8b27e540', aws: true, account: '生产账号', region: 'us-east-1', zone: 'us-east-1b', s: 'running', spec: 't3.small', size: '2 vCPU · 2 GiB', priv: '172.31.0.10', pub: '3.91.24.188', cpu: 2.1 },
+      { name: 'ci-runner-04', id: 'i-2ze9k1f7m3p0r6t2y8', aws: false, account: '测试账号', region: 'cn-beijing', zone: '可用区 K', s: 'stopped', spec: 'ecs.c6.large', size: '2 vCPU · 4 GiB', priv: '10.30.2.40', pub: '—', cpu: null },
+      { name: 'analytics-etl-02', id: 'i-0b6e1d4f7a92c3805', aws: true, account: '数据平台', region: 'eu-central-1', zone: 'eu-central-1a', s: 'starting', spec: 'r6i.2xlarge', size: '8 vCPU · 64 GiB', priv: '10.50.1.23', pub: '—', cpu: null },
+      { name: 'gw-nat-02', id: 'i-bp1c7h3j9k2l5m8n0p', aws: false, account: '主账号', region: 'cn-hangzhou', zone: '可用区 I', s: 'running', spec: 'ecs.g7.large', size: '2 vCPU · 8 GiB', priv: '10.12.0.5', pub: '116.62.40.9', cpu: 23.5, date: '2027-01-20', days: 114 }
+    ].filter(keep).map(function (r) {
+      var has = r.cpu !== null;
+      return Object.assign({}, r, self.cloudTag(r.aws), self.expiry(r.date, r.days), {
+        st: self.status(r.s),
+        cpuText: has ? r.cpu.toFixed(1) + '%' : '—',
+        cpuPct: has ? r.cpu : 0,
+        cpuColor: !has ? '#6B7280' : r.cpu >= 85 ? '#B42318' : r.cpu >= 70 ? '#8A4B00' : '#151821',
+        cpuBar: !has ? '#EEF0F3' : r.cpu >= 85 ? '#E5484D' : r.cpu >= 70 ? '#F0A020' : '#2443B5',
+        idle: has && r.cpu < 5
+      });
+    });
+
+    var rds = [
+      { name: 'prod-mysql-main', id: 'rm-bp1x7k2m9n3q4w5e6', aws: false, account: '主账号', region: 'cn-hangzhou', s: 'running', engine: 'MySQL 8.0', spec: 'rds.mysql.x4.large.2c', storage: '500 GB', date: '2026-10-06', days: 8 },
+      { name: 'orders-pg', id: 'db-orders-pg-prod', aws: true, account: '生产账号', region: 'us-east-1', s: 'running', engine: 'PostgreSQL 16.4', spec: 'db.r6g.xlarge', storage: '400 GiB' },
+      { name: 'user-center-db', id: 'rm-uf6a2b8c4d0e1f3g5', aws: false, account: '电商业务', region: 'cn-shanghai', s: 'running', engine: 'MySQL 8.0', spec: 'mysql.n4.xlarge.2c', storage: '300 GB', date: '2027-02-18', days: 143 },
+      { name: 'analytics-mysql', id: 'db-analytics-mysql', aws: true, account: '数据平台', region: 'ap-northeast-1', s: 'changing', engine: 'MySQL 8.0.39', spec: 'db.m6i.large', storage: '200 GiB' },
+      { name: 'report-sqlserver', id: 'rm-2ze4h6j8k0l2m4n6', aws: false, account: '主账号', region: 'cn-beijing', s: 'running', engine: 'SQL Server 2019', spec: 'mssql.x4.medium.e2', storage: '250 GB', date: '2027-05-01', days: 215 },
+      { name: 'cn-app-db', id: 'db-cn-app-db', aws: true, account: '中国区', region: 'cn-north-1', s: 'running', engine: 'MySQL 8.0.39', spec: 'db.m5.large', storage: '100 GiB' }
+    ].filter(keep).map(function (r) {
+      return Object.assign({}, r, self.cloudTag(r.aws), self.expiry(r.date, r.days), { st: self.status(r.s) });
+    });
+
+    var lb = [
+      { name: 'gw-slb-public', id: 'lb-2zem3k8x1q9v7r5t0', aws: false, account: '主账号', region: 'cn-beijing', s: 'running', kind: 'CLB · 性能保障型', addr: '39.106.22.8', net: '公网' },
+      { name: 'api-alb-prod', id: 'app/api-alb-prod/7c1e9d2a4b6f8031', aws: true, account: '生产账号', region: 'us-east-1', s: 'running', kind: 'ALB', addr: 'api-alb-prod-1843729.us-east-1.elb.amazonaws.com', net: '公网' },
+      { name: 'shop-alb', id: 'alb-8k2m4n6p0q2r4s6t', aws: false, account: '电商业务', region: 'cn-shanghai', s: 'running', kind: 'ALB · 标准版', addr: 'alb-8k2m4n6p0q2r4s6t.cn-shanghai.alb.aliyuncs.com', net: '公网' },
+      { name: 'ingest-nlb', id: 'net/ingest-nlb/2f4a6c8e0b1d3f57', aws: true, account: '数据平台', region: 'ap-northeast-1', s: 'running', kind: 'NLB', addr: 'ingest-nlb-9a8b7c.elb.ap-northeast-1.amazonaws.com', net: '内网' },
+      { name: 'internal-slb-01', id: 'lb-uf6q8w2e4r6t8y0u', aws: false, account: '主账号', region: 'cn-shanghai', s: 'stopped', kind: 'CLB · 共享型', addr: '10.20.0.100', net: '内网' },
+      { name: 'cn-web-alb', id: 'app/cn-web-alb/0d2f4b6a8c1e3a57', aws: true, account: '中国区', region: 'cn-northwest-1', s: 'running', kind: 'ALB', addr: 'cn-web-alb-11223.cn-northwest-1.elb.amazonaws.com.cn', net: '公网' }
+    ].filter(keep).map(function (r) {
+      return Object.assign({}, r, self.cloudTag(r.aws), { st: self.status(r.s) });
+    });
+
+    var bucket = [
+      { name: 'shop-static-assets', aws: false, account: '电商业务', region: 'cn-hangzhou', cls: '标准存储', size: '2.84 TB', objects: '18,420,113', created: '2023-04-11' },
+      { name: 'prod-logs-archive-us', aws: true, account: '生产账号', region: 'us-east-1', cls: 'S3 Standard', size: '41.6 TB', objects: '902,441,887', created: '2021-09-02' },
+      { name: 'data-lake-raw', aws: true, account: '数据平台', region: 'ap-northeast-1', cls: 'S3 Standard', size: '118.3 TB', objects: '1,284,002,519', created: '2022-06-17' },
+      { name: 'backup-rds-daily', aws: false, account: '主账号', region: 'cn-shanghai', cls: '低频访问', size: '16.2 TB', objects: '4,108', created: '2022-01-08' },
+      { name: 'cn-app-uploads', aws: true, account: '中国区', region: 'cn-north-1', cls: 'S3 Standard', size: '736 GB', objects: '2,093,775', created: '2024-03-22' },
+      { name: 'test-artifacts', aws: false, account: '测试账号', region: 'cn-beijing', cls: '标准存储', size: '512 GB', objects: '88,301', created: '2025-07-30' }
+    ].filter(keep).map(function (r) {
+      return Object.assign({}, r, self.cloudTag(r.aws));
+    });
+
+    var total = counts[tab][cloud];
+    return {
+      tabs: tabs,
+      clouds: clouds,
+      show: { vm: tab === 'vm', rds: tab === 'rds', lb: tab === 'lb', bucket: tab === 'bucket' },
+      vm: vm,
+      rds: rds,
+      lb: lb,
+      bucket: bucket,
+      total: total,
+      pages: Math.ceil(total / 20),
+      reset: function () { self.setState({ cloud: 'all' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

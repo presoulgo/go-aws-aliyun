@@ -69,6 +69,9 @@ func (l *Limiter) Fail(username string) (remaining int, lockedUntil time.Time) {
 	return l.maxFailures - e.failures, time.Time{}
 }
 
+// MaxFailures is the number of consecutive failures that locks a username.
+func (l *Limiter) MaxFailures() int { return l.maxFailures }
+
 // Reset clears the failures after a successful login.
 func (l *Limiter) Reset(username string) {
 	l.mu.Lock()

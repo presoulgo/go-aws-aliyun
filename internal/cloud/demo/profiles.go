@@ -115,6 +115,7 @@ type hero struct {
 	ak       string
 	typ      string
 	region   string
+	zone     string // optional; random when empty
 	name     string
 	id       string
 	spec     string
@@ -129,9 +130,9 @@ type hero struct {
 
 var heroes = []hero{
 	// AWS 生产账号
-	{ak: akAWSProd, typ: model.TypeVM, region: "us-east-1", name: "order-worker-03", id: "i-0a7f3c29e1b84d5f6", spec: "c6i.2xlarge", status: "running", cpu: 88.1, priv: "172.31.8.144", pub: "54.210.33.17",
+	{ak: akAWSProd, typ: model.TypeVM, region: "us-east-1", zone: "us-east-1a", name: "order-worker-03", id: "i-0a7f3c29e1b84d5f6", spec: "c6i.2xlarge", status: "running", cpu: 88.1, priv: "172.31.8.144", pub: "54.210.33.17",
 		tags: map[string]string{"env": "prod", "app": "order", "team": "trade"}},
-	{ak: akAWSProd, typ: model.TypeVM, region: "us-east-1", name: "bastion-01", id: "i-0f19d3a6c8b27e540", spec: "t3.small", status: "running", cpu: 2.1, priv: "172.31.0.10", pub: "3.91.24.188",
+	{ak: akAWSProd, typ: model.TypeVM, region: "us-east-1", zone: "us-east-1b", name: "bastion-01", id: "i-0f19d3a6c8b27e540", spec: "t3.small", status: "running", cpu: 2.1, priv: "172.31.0.10", pub: "3.91.24.188",
 		tags: map[string]string{"env": "prod", "app": "bastion", "team": "ops"}},
 	{ak: akAWSProd, typ: model.TypeVM, region: "us-east-1", name: "api-gw-02", spec: "c6i.xlarge", status: "running", cpu: 71.3},
 	{ak: akAWSProd, typ: model.TypeVM, region: "us-west-2", name: "orders-sync-05", spec: "m6i.xlarge", status: "running", cpu: 61.0},
@@ -142,9 +143,9 @@ var heroes = []hero{
 	{ak: akAWSProd, typ: model.TypeBucket, region: "us-east-1", name: "prod-logs-archive-us",
 		extra: map[string]any{"size_bytes": 41.6e12, "object_count": 902441887}},
 	// AWS 数据平台
-	{ak: akAWSData, typ: model.TypeVM, region: "ap-northeast-1", name: "ingest-node-11", id: "i-05c2e9b7d41a3f8e2", spec: "m6i.xlarge", status: "running", cpu: 79.2, priv: "10.40.3.77"},
+	{ak: akAWSData, typ: model.TypeVM, region: "ap-northeast-1", zone: "ap-northeast-1c", name: "ingest-node-11", id: "i-05c2e9b7d41a3f8e2", spec: "m6i.xlarge", status: "running", cpu: 79.2, priv: "10.40.3.77"},
 	{ak: akAWSData, typ: model.TypeVM, region: "ap-northeast-1", name: "kafka-broker-1", spec: "r6i.xlarge", status: "running", cpu: 66.8},
-	{ak: akAWSData, typ: model.TypeVM, region: "eu-central-1", name: "analytics-etl-02", id: "i-0b6e1d4f7a92c3805", spec: "r6i.2xlarge", status: "pending", priv: "10.50.1.23"},
+	{ak: akAWSData, typ: model.TypeVM, region: "eu-central-1", zone: "eu-central-1a", name: "analytics-etl-02", id: "i-0b6e1d4f7a92c3805", spec: "r6i.2xlarge", status: "pending", priv: "10.50.1.23"},
 	{ak: akAWSData, typ: model.TypeRDS, region: "ap-northeast-1", name: "analytics-mysql", spec: "db.m6i.large", status: "modifying",
 		extra: map[string]any{"engine": "mysql", "engine_version": "8.0.39", "allocated_storage_gib": 200}},
 	{ak: akAWSData, typ: model.TypeLB, region: "ap-northeast-1", name: "ingest-nlb", id: "net/ingest-nlb/2f4a6c8e0b1d3f57", status: "active",
@@ -159,10 +160,10 @@ var heroes = []hero{
 	{ak: akAWSChina, typ: model.TypeBucket, region: "cn-north-1", name: "cn-app-uploads",
 		extra: map[string]any{"size_bytes": 736e9, "object_count": 2093775}},
 	// 阿里云 主账号
-	{ak: akAliMain, typ: model.TypeVM, region: "cn-shanghai", name: "es-data-02", id: "i-uf6d0n3v8r2k5t1w9q", spec: "ecs.r7.4xlarge", status: "Running", cpu: 83.6, priv: "10.20.1.9", expireIn: 65},
+	{ak: akAliMain, typ: model.TypeVM, region: "cn-shanghai", zone: "cn-shanghai-l", name: "es-data-02", id: "i-uf6d0n3v8r2k5t1w9q", spec: "ecs.r7.4xlarge", status: "Running", cpu: 83.6, priv: "10.20.1.9", expireIn: 65},
 	{ak: akAliMain, typ: model.TypeVM, region: "cn-beijing", name: "redis-proxy-01", spec: "ecs.g7.large", status: "Running", cpu: 74.5},
-	{ak: akAliMain, typ: model.TypeVM, region: "cn-hangzhou", name: "gw-nat-02", id: "i-bp1c7h3j9k2l5m8n0p", spec: "ecs.g7.large", status: "Running", cpu: 23.5, priv: "10.12.0.5", pub: "116.62.40.9", expireIn: 114},
-	{ak: akAliMain, typ: model.TypeRDS, region: "cn-hangzhou", name: "prod-mysql-main", id: "rm-bp1x7k2m9n3q4w5e6", spec: "rds.mysql.x4.large.2c", status: "Running", expireIn: 8,
+	{ak: akAliMain, typ: model.TypeVM, region: "cn-hangzhou", zone: "cn-hangzhou-i", name: "gw-nat-02", id: "i-bp1c7h3j9k2l5m8n0p", spec: "ecs.g7.large", status: "Running", cpu: 23.5, priv: "10.12.0.5", pub: "116.62.40.9", expireIn: 114},
+	{ak: akAliMain, typ: model.TypeRDS, region: "cn-hangzhou", zone: "cn-hangzhou-h", name: "prod-mysql-main", id: "rm-bp1x7k2m9n3q4w5e6", spec: "rds.mysql.x4.large.2c", status: "Running", expireIn: 8,
 		extra: map[string]any{"engine": "MySQL", "engine_version": "8.0", "storage_gb": 500}},
 	{ak: akAliMain, typ: model.TypeRDS, region: "cn-beijing", name: "report-sqlserver", id: "rm-2ze4h6j8k0l2m4n6", spec: "mssql.x4.medium.e2", status: "Running", expireIn: 215,
 		extra: map[string]any{"engine": "SQLServer", "engine_version": "2019_std_ha", "storage_gb": 250}},
@@ -173,22 +174,22 @@ var heroes = []hero{
 	{ak: akAliMain, typ: model.TypeBucket, region: "cn-shanghai", name: "backup-rds-daily",
 		extra: map[string]any{"size_bytes": 16.2e12, "object_count": 4108, "storage_class": "IA", "storage_class_label": "低频访问"}},
 	// 阿里云 电商业务
-	{ak: akAliShop, typ: model.TypeVM, region: "cn-hangzhou", name: "prod-api-07", id: "i-bp1f3k9x2m7qa8d0c1e", spec: "ecs.c7.2xlarge", status: "Running", cpu: 92.4,
+	{ak: akAliShop, typ: model.TypeVM, region: "cn-hangzhou", zone: "cn-hangzhou-h", name: "prod-api-07", id: "i-bp1f3k9x2m7qa8d0c1e", spec: "ecs.c7.2xlarge", status: "Running", cpu: 92.4,
 		priv: "10.12.4.21", pub: "47.98.113.20", expireIn: 167,
 		extra: map[string]any{"bandwidth_out_mbps": 200},
 		tags:  map[string]string{"env": "prod", "app": "api-gateway", "team": "trade", "owner": "ops", "cost-center": "cc-102", "managed-by": "terraform"}},
-	{ak: akAliShop, typ: model.TypeVM, region: "cn-shanghai", name: "prod-web-12", id: "i-uf618w2l5q0z7n4m6x3", spec: "ecs.g7.xlarge", status: "Running", cpu: 41.7, priv: "10.20.6.12", pub: "139.196.8.45", expireIn: 13},
+	{ak: akAliShop, typ: model.TypeVM, region: "cn-shanghai", zone: "cn-shanghai-g", name: "prod-web-12", id: "i-uf618w2l5q0z7n4m6x3", spec: "ecs.g7.xlarge", status: "Running", cpu: 41.7, priv: "10.20.6.12", pub: "139.196.8.45", expireIn: 13},
 	{ak: akAliShop, typ: model.TypeVM, region: "cn-hangzhou", name: "search-api-03", spec: "ecs.c7.xlarge", status: "Running", cpu: 69.9},
 	{ak: akAliShop, typ: model.TypeVM, region: "cn-shanghai", name: "video-transcode-2", spec: "ecs.c7.4xlarge", status: "Running", cpu: 64.2},
 	{ak: akAliShop, typ: model.TypeVM, region: "cn-hangzhou", name: "bi-report-02", spec: "ecs.g7.xlarge", status: "Running", cpu: 18.4, expireIn: 26},
-	{ak: akAliShop, typ: model.TypeRDS, region: "cn-shanghai", name: "user-center-db", id: "rm-uf6a2b8c4d0e1f3g5", spec: "mysql.n4.xlarge.2c", status: "Running", expireIn: 143,
+	{ak: akAliShop, typ: model.TypeRDS, region: "cn-shanghai", zone: "cn-shanghai-l", name: "user-center-db", id: "rm-uf6a2b8c4d0e1f3g5", spec: "mysql.n4.xlarge.2c", status: "Running", expireIn: 143,
 		extra: map[string]any{"engine": "MySQL", "engine_version": "8.0", "storage_gb": 300}},
 	{ak: akAliShop, typ: model.TypeLB, region: "cn-shanghai", name: "shop-alb", id: "alb-8k2m4n6p0q2r4s6t", status: "Active",
 		extra: map[string]any{"lb_kind": "alb", "network": "internet", "address": "alb-8k2m4n6p0q2r4s6t.cn-shanghai.alb.aliyuncs.com", "lb_spec": "标准版"}},
 	{ak: akAliShop, typ: model.TypeBucket, region: "cn-hangzhou", name: "shop-static-assets",
 		extra: map[string]any{"size_bytes": 2.84e12, "object_count": 18420113, "storage_class": "Standard", "storage_class_label": "标准存储"}},
 	// 阿里云 测试账号
-	{ak: akAliTest, typ: model.TypeVM, region: "cn-beijing", name: "ci-runner-04", id: "i-2ze9k1f7m3p0r6t2y8", spec: "ecs.c6.large", status: "Stopped", priv: "10.30.2.40"},
+	{ak: akAliTest, typ: model.TypeVM, region: "cn-beijing", zone: "cn-beijing-k", name: "ci-runner-04", id: "i-2ze9k1f7m3p0r6t2y8", spec: "ecs.c6.large", status: "Stopped", priv: "10.30.2.40"},
 	{ak: akAliTest, typ: model.TypeBucket, region: "cn-beijing", name: "test-artifacts",
 		extra: map[string]any{"size_bytes": 512e9, "object_count": 88301, "storage_class": "Standard", "storage_class_label": "标准存储"}},
 }

@@ -151,7 +151,8 @@ func describeInstanceTypes(ctx context.Context, api ec2API, instances []ec2types
 func normalizeEC2State(s ec2types.InstanceStateName) string {
 	switch s {
 	case ec2types.InstanceStateNamePending:
-		return model.StatusPending
+		// "pending" covers both a new launch and a start from stopped.
+		return model.StatusStarting
 	case ec2types.InstanceStateNameRunning:
 		return model.StatusRunning
 	case ec2types.InstanceStateNameStopping:

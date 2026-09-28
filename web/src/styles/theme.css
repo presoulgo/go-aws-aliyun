@@ -392,6 +392,12 @@ button {
   height: 20px;
 }
 
+/* 当前排序的列标题用主色，和原型一致 */
+.el-table th.el-table__cell.ascending > .cell,
+.el-table th.el-table__cell.descending > .cell {
+  color: var(--ys-primary);
+}
+
 /* 分页 */
 .el-pagination {
   --el-pagination-font-size: 13px;

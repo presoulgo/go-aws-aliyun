@@ -524,6 +524,10 @@ const placeholders = computed(() =>
   min-height: 38px;
 }
 
+.field > .segmented {
+  align-self: flex-start;
+}
+
 .mono-input :deep(input) {
   font-family: var(--ys-font-mono);
   font-size: 13px;

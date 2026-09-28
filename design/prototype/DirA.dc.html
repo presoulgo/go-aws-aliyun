@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>方向 A · 深空指挥舱</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1218;font-family:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;color:#E7EAF0}
+a{color:#A0A8B6}a:hover{color:#FFFFFF}
+input::placeholder{color:#7E8796}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; flex-direction: column; background: #0E1218; color: #E7EAF0; font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;">
+
+  <header style="height: 60px; flex-shrink: 0; box-sizing: border-box; padding: 0 32px; display: flex; align-items: center; gap: 44px; background: #0B0F14; border-bottom: 1px solid #1E2530;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E7EAF0" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"></path><path d="M12 12V2.5M12 12l8.2 4.75M12 12l-8.2 4.75"></path><circle cx="12" cy="12" r="2.4" fill="#E7EAF0" stroke="none"></circle></svg>
+      <span style="font-size: 18px; font-weight: 700; letter-spacing: 0.04em;">云枢</span>
+    </div>
+    <nav aria-label="主导航" style="display: flex; align-items: stretch; gap: 30px; height: 60px;">
+      <a href="#" aria-current="page" style="display: flex; align-items: center; box-sizing: border-box; padding-top: 2px; font-size: 14px; color: #FFFFFF; text-decoration: none; border-bottom: 2px solid #E7EAF0;">概览</a>
+      <a href="#" style="display: flex; align-items: center; font-size: 14px; color: #A0A8B6; text-decoration: none;">资源中心</a>
+      <a href="#" style="display: flex; align-items: center; font-size: 14px; color: #A0A8B6; text-decoration: none;">监控中心</a>
+      <a href="#" style="display: flex; align-items: center; font-size: 14px; color: #A0A8B6; text-decoration: none;">云账号</a>
+      <a href="#" style="display: flex; align-items: center; font-size: 14px; color: #A0A8B6; text-decoration: none;">系统管理</a>
+    </nav>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 18px;">
+      <label style="display: flex; align-items: center; gap: 8px; width: 300px; height: 36px; box-sizing: border-box; padding: 0 12px; border: 1px solid #2A3240; border-radius: 8px; background: #121821; color: #7E8796;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input type="search" aria-label="搜索资源" placeholder="搜索实例 ID / IP / 名称" style="flex-grow: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #E7EAF0; font-family: inherit; font-size: 13px;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 1px 6px; border: 1px solid #2A3240; border-radius: 4px;">/</span>
+      </label>
+      <button type="button" aria-label="用户菜单" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 4px; border: 0; background: transparent; color: #E7EAF0; font-family: inherit; cursor: pointer;">
+        <span style="width: 30px; height: 30px; border-radius: 50%; background: #2A3240; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;">A</span>
+        <span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;"><span style="font-size: 13px;">admin</span><span style="font-size: 11px; color: #A0A8B6;">管理员</span></span>
+      </button>
+    </div>
+  </header>
+
+  <main style="flex-grow: 1; box-sizing: border-box; padding: 24px 32px; display: flex; flex-direction: column; gap: 16px;">
+
+    <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: baseline; gap: 16px;">
+        <h1 style="margin: 0; font-size: 26px; font-weight: 700;">概览</h1>
+        <span style="font-size: 13px; color: #A0A8B6;">6 个云账号 · 27 个地域 · 数据更新于 2 分钟前</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; gap: 2px; padding: 3px; border: 1px solid #2A3240; border-radius: 9px; background: #121821;">
+          <button type="button" aria-pressed="true" style="height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: #262E3B; color: #FFFFFF; font-family: inherit; font-size: 13px;">全部</button>
+          <button type="button" aria-pressed="false" style="height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: transparent; color: #A0A8B6; font-family: inherit; font-size: 13px;">AWS</button>
+          <button type="button" aria-pressed="false" style="height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: transparent; color: #A0A8B6; font-family: inherit; font-size: 13px;">阿里云</button>
+        </div>
+        <button type="button" style="height: 38px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 8px; background: #E7EAF0; color: #0E1218; font-family: inherit; font-size: 13px; font-weight: 600;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>
+          立即同步
+        </button>
+      </div>
+    </div>
+
+    <section aria-label="关键指标" style="height: 112px; flex-shrink: 0; display: flex; border: 1px solid #232A35; border-radius: 12px; background: #151A22;">
+      <div style="flex: 1 1 0; box-sizing: border-box; padding: 16px 22px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid #232A35;">
+        <span style="font-size: 13px; color: #A0A8B6;">纳管账号</span>
+        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 600; line-height: 1;">6</span>
+        <span style="font-size: 12px; color: #8C95A4;">AWS 3 · 阿里云 3</span>
+      </div>
+      <div style="flex: 1 1 0; box-sizing: border-box; padding: 16px 22px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid #232A35;">
+        <span style="font-size: 13px; color: #A0A8B6;">资源总数</span>
+        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 600; line-height: 1;">784</span>
+        <span style="font-size: 12px; color: #8C95A4;">4 类资源 · 27 个地域</span>
+      </div>
+      <div style="flex: 1 1 0; box-sizing: border-box; padding: 16px 22px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid #232A35;">
+        <span style="font-size: 13px; color: #A0A8B6;">运行中主机</span>
+        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 600; line-height: 1;">441<span style="font-size: 20px; color: #8C95A4; font-weight: 500;"> / 486</span></span>
+        <span style="font-size: 12px; color: #8C95A4;">运行率 90.7%</span>
+      </div>
+      <div style="flex: 1 1 0; box-sizing: border-box; padding: 16px 22px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid #232A35;">
+        <span style="font-size: 13px; color: #A0A8B6;">闲置主机</span>
+        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 600; line-height: 1;">37</span>
+        <span style="font-size: 12px; color: #8C95A4;">24 小时 CPU 均值低于 5%</span>
+      </div>
+      <div style="flex: 1 1 0; box-sizing: border-box; padding: 16px 22px; display: flex; flex-direction: column; justify-content: space-between;">
+        <span style="font-size: 13px; color: #A0A8B6;">30 天内到期</span>
+        <span style="font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 600; line-height: 1; color: #F2B84B;">12</span>
+        <span style="font-size: 12px; color: #8C95A4;">最近一项 8 天后到期</span>
+      </div>
+    </section>
+
+    <div style="height: 318px; flex-shrink: 0; display: flex; gap: 16px;">
+      <section style="width: 900px; flex-shrink: 0; box-sizing: border-box; padding: 20px; display: flex; flex-direction: column; gap: 14px; border: 1px solid #232A35; border-radius: 12px; background: #151A22;">
+        <div style="height: 22px; display: flex; align-items: center; justify-content: space-between;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">主机 CPU 均值 · 近 24 小时</h2>
+          <div style="display: flex; align-items: center; gap: 18px; font-size: 12px; color: #A0A8B6;">
+            <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 14px; height: 3px; border-radius: 2px; background: #5B9BFF;"></span>AWS · 214 台</span>
+            <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 14px; height: 3px; border-radius: 2px; background: #FF9B45;"></span>阿里云 · 272 台</span>
+          </div>
+        </div>
+        <svg width="860" height="242" viewBox="0 0 860 242" role="img" aria-label="近 24 小时 AWS 与阿里云主机 CPU 均值曲线" style="display: block;">
+          <line x1="44" y1="12" x2="852" y2="12" stroke="#212833" stroke-width="1"></line>
+          <line x1="44" y1="62" x2="852" y2="62" stroke="#212833" stroke-width="1"></line>
+          <line x1="44" y1="112" x2="852" y2="112" stroke="#212833" stroke-width="1"></line>
+          <line x1="44" y1="162" x2="852" y2="162" stroke="#212833" stroke-width="1"></line>
+          <line x1="44" y1="212" x2="852" y2="212" stroke="#2E3644" stroke-width="1"></line>
+          <text x="34" y="16" text-anchor="end" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">60%</text>
+          <text x="34" y="66" text-anchor="end" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">45%</text>
+          <text x="34" y="116" text-anchor="end" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">30%</text>
+          <text x="34" y="166" text-anchor="end" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">15%</text>
+          <text x="34" y="216" text-anchor="end" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">0</text>
+          <path d="{{aliArea}}" fill="#FF9B45" fill-opacity="0.08"></path>
+          <path d="{{awsArea}}" fill="#5B9BFF" fill-opacity="0.10"></path>
+          <path d="{{aliLine}}" fill="none" stroke="#FF9B45" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+          <path d="{{awsLine}}" fill="none" stroke="#5B9BFF" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+          <line x1="{{hover.x}}" y1="12" x2="{{hover.x}}" y2="212" stroke="#4A5466" stroke-width="1" stroke-dasharray="3 3"></line>
+          <circle cx="{{hover.x}}" cy="{{hover.aliY}}" r="4" fill="#151A22" stroke="#FF9B45" stroke-width="2"></circle>
+          <circle cx="{{hover.x}}" cy="{{hover.awsY}}" r="4" fill="#151A22" stroke="#5B9BFF" stroke-width="2"></circle>
+          <rect x="622" y="26" width="112" height="68" rx="6" fill="#0B0F14" stroke="#2A3240"></rect>
+          <text x="634" y="46" font-size="11" fill="#A0A8B6">今日 09:00</text>
+          <rect x="634" y="58" width="8" height="8" rx="2" fill="#5B9BFF"></rect>
+          <text x="648" y="66" font-size="12" fill="#E7EAF0">AWS</text>
+          <text x="722" y="66" text-anchor="end" font-size="12" fill="#E7EAF0" font-family="Space Grotesk, sans-serif">34.0%</text>
+          <rect x="634" y="75" width="8" height="8" rx="2" fill="#FF9B45"></rect>
+          <text x="648" y="83" font-size="12" fill="#E7EAF0">阿里云</text>
+          <text x="722" y="83" text-anchor="end" font-size="12" fill="#E7EAF0" font-family="Space Grotesk, sans-serif">42.0%</text>
+          <text x="44" y="236" text-anchor="start" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">13:00</text>
+          <text x="184.5" y="236" text-anchor="middle" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">17:00</text>
+          <text x="325" y="236" text-anchor="middle" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">21:00</text>
+          <text x="465.6" y="236" text-anchor="middle" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">01:00</text>
+          <text x="606.1" y="236" text-anchor="middle" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">05:00</text>
+          <text x="746.6" y="236" text-anchor="middle" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">09:00</text>
+          <text x="852" y="236" text-anchor="end" font-size="11" fill="#8C95A4" font-family="JetBrains Mono, monospace">12:00</text>
+        </svg>
+      </section>
+
+      <section style="flex-grow: 1; box-sizing: border-box; padding: 20px 22px; display: flex; flex-direction: column; gap: 22px; border: 1px solid #232A35; border-radius: 12px; background: #151A22;">
+        <div style="height: 22px; display: flex; align-items: center; justify-content: space-between;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">资源构成</h2>
+          <span style="font-size: 12px; color: #A0A8B6;">AWS 364 · 阿里云 420</span>
+        </div>
+        <sc-for list="{{types}}" as="t" hint-placeholder-count="4">
+          <div style="display: flex; flex-direction: column; gap: 9px;">
+            <div style="display: flex; align-items: baseline; gap: 12px;">
+              <span style="font-size: 14px; color: #E7EAF0;">{{t.label}}</span>
+              <span style="font-size: 12px; color: #8C95A4;">AWS {{t.aws}} · 阿里云 {{t.ali}}</span>
+              <span style="margin-left: auto; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 600;">{{t.total}}</span>
+            </div>
+            <div style="display: flex; gap: 3px; height: 8px;">
+              <div style="width: {{t.awsPct}}%; height: 8px; border-radius: 4px; background: #5B9BFF;"></div>
+              <div style="flex-grow: 1; height: 8px; border-radius: 4px; background: #FF9B45;"></div>
+            </div>
+          </div>
+        </sc-for>
+      </section>
+    </div>
+
+    <div style="flex-grow: 1; display: flex; gap: 16px;">
+      <section style="flex: 1 1 0; box-sizing: border-box; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; border: 1px solid #232A35; border-radius: 12px; background: #151A22;">
+        <div style="height: 22px; display: flex; align-items: center; gap: 10px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">CPU 使用率 Top 5</h2>
+          <span style="font-size: 12px; color: #8C95A4;">近 1 小时均值</span>
+          <a href="#" style="margin-left: auto; font-size: 12px; text-decoration: none;">查看全部</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{top}}" as="r" hint-placeholder-count="5">
+            <div style="display: flex; flex-direction: column; gap: 7px;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                <span style="width: 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8C95A4;">{{r.rank}}</span>
+                <span style="font-weight: 500;">{{r.name}}</span>
+                <span style="padding: 1px 6px; border-radius: 4px; font-size: 11px; background: {{r.tagBg}}; color: {{r.tagFg}};">{{r.cloud}}</span>
+                <span style="font-size: 12px; color: #8C95A4;">{{r.region}}</span>
+                <span style="margin-left: auto; font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; color: {{r.valColor}};">{{r.cpu}}%</span>
+              </div>
+              <div style="height: 4px; margin-left: 24px; border-radius: 2px; background: #232A35;">
+                <div style="width: {{r.cpu}}%; height: 4px; border-radius: 2px; background: {{r.barColor}};"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="flex: 1 1 0; box-sizing: border-box; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; border: 1px solid #232A35; border-radius: 12px; background: #151A22;">
+        <div style="height: 22px; display: flex; align-items: center; gap: 10px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">即将到期</h2>
+          <span style="font-size: 12px; color: #8C95A4;">包年包月 · 30 天内</span>
+          <a href="#" style="margin-left: auto; font-size: 12px; text-decoration: none;">全部 12 项</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{exp}}" as="e" hint-placeholder-count="4">
+            <div style="height: 40px; display: flex; align-items: center; gap: 12px;">
+              <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
+                <span style="font-size: 13px; font-weight: 500;">{{e.name}}</span>
+                <span style="font-size: 12px; color: #8C95A4;">{{e.type}} · 阿里云 {{e.region}} · {{e.date}} 到期</span>
+              </div>
+              <span style="padding: 3px 9px; border-radius: 6px; font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; background: {{e.badgeBg}}; color: {{e.badgeFg}};">{{e.days}} 天</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="flex: 1 1 0; box-sizing: border-box; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; border: 1px solid #232A35; border-radius: 12px; background: #151A22;">
+        <div style="height: 22px; display: flex; align-items: center; gap: 10px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">最近同步</h2>
+          <span style="font-size: 12px; color: #8C95A4;">每 30 分钟自动同步</span>
+          <a href="#" style="margin-left: auto; font-size: 12px; text-decoration: none;">同步历史</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{sync}}" as="s" hint-placeholder-count="4">
+            <div style="height: 40px; display: flex; align-items: center; gap: 12px;">
+              <span style="width: 8px; height: 8px; flex-shrink: 0; border-radius: 50%; background: {{s.dot}};"></span>
+              <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 13px;"><span style="font-weight: 500;">{{s.account}}</span><span style="font-size: 12px; color: {{s.statusColor}};">{{s.status}}</span></span>
+                <span style="font-size: 12px; color: #8C95A4;">{{s.detail}}</span>
+              </div>
+              <span style="font-size: 12px; color: #8C95A4;">{{s.time}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  pts(vals, x0, x1, y0, y1, max) {
+    var out = [];
+    for (var i = 0; i < vals.length; i++) {
+      out.push([x0 + (x1 - x0) * i / (vals.length - 1), y1 - (y1 - y0) * vals[i] / max]);
+    }
+    return out;
+  }
+  line(p) {
+    return p.map(function (q, i) { return (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1); }).join(' ');
+  }
+  area(p, base) {
+    return this.line(p) + ' L' + p[p.length - 1][0].toFixed(1) + ' ' + base + ' L' + p[0][0].toFixed(1) + ' ' + base + ' Z';
+  }
+  renderVals() {
+    var aws = [40, 41, 40, 39, 37, 35, 33, 31, 28, 25, 23, 22, 21, 19, 18, 18, 19, 21, 25, 30, 34, 37, 39, 38];
+    var ali = [47, 48, 48, 46, 44, 42, 40, 37, 34, 31, 28, 26, 24, 23, 22, 21, 22, 25, 31, 37, 42, 45, 47, 46];
+    var pa = this.pts(aws, 44, 852, 12, 212, 60);
+    var pb = this.pts(ali, 44, 852, 12, 212, 60);
+    var h = 20;
+    var types = [
+      { label: '云主机', aws: 214, ali: 272 },
+      { label: '数据库', aws: 24, ali: 34 },
+      { label: '负载均衡', aws: 31, ali: 42 },
+      { label: '对象存储', aws: 95, ali: 72 }
+    ].map(function (t) {
+      var total = t.aws + t.ali;
+      return { label: t.label, aws: t.aws, ali: t.ali, total: total, awsPct: (t.aws / total * 100).toFixed(1) };
+    });
+    var top = [
+      { rank: 1, name: 'prod-api-07', cloud: '阿里云', region: 'cn-hangzhou', cpu: 92.4 },
+      { rank: 2, name: 'order-worker-03', cloud: 'AWS', region: 'us-east-1', cpu: 88.1 },
+      { rank: 3, name: 'es-data-02', cloud: '阿里云', region: 'cn-shanghai', cpu: 83.6 },
+      { rank: 4, name: 'ingest-node-11', cloud: 'AWS', region: 'ap-northeast-1', cpu: 79.2 },
+      { rank: 5, name: 'redis-proxy-01', cloud: '阿里云', region: 'cn-beijing', cpu: 74.5 }
+    ].map(function (r) {
+      var isAws = r.cloud === 'AWS';
+      return Object.assign({}, r, {
+        tagBg: isAws ? '#1B2A44' : '#3A2616',
+        tagFg: isAws ? '#9CC2FF' : '#FFB67F',
+        barColor: r.cpu >= 85 ? '#FF6B6B' : '#F2B84B',
+        valColor: r.cpu >= 85 ? '#FF8A8A' : '#F5C66E'
+      });
+    });
+    var exp = [
+      { name: 'prod-mysql-main', type: '数据库', region: 'cn-hangzhou', date: '10-06', days: 8 },
+      { name: 'prod-web-12', type: '云主机', region: 'cn-shanghai', date: '10-11', days: 13 },
+      { name: 'gw-slb-public', type: '负载均衡', region: 'cn-beijing', date: '10-19', days: 21 },
+      { name: 'bi-report-02', type: '云主机', region: 'cn-hangzhou', date: '10-24', days: 26 }
+    ].map(function (e) {
+      var urgent = e.days <= 10;
+      return Object.assign({}, e, { badgeBg: urgent ? '#3D2E12' : '#1F2631', badgeFg: urgent ? '#F5C66E' : '#C3CAD6' });
+    });
+    var sync = [
+      { account: 'AWS 生产账号', ok: true, detail: '12 个地域 · 318 项 · 用时 48 秒', time: '2 分钟前' },
+      { account: '阿里云 主账号', ok: false, detail: 'ap-south-1 负载均衡采集超时，其余正常', time: '6 分钟前' },
+      { account: 'AWS 中国区', ok: true, detail: '2 个地域 · 64 项 · 用时 12 秒', time: '9 分钟前' },
+      { account: '阿里云 测试账号', ok: true, detail: '3 个地域 · 97 项 · 用时 21 秒', time: '31 分钟前' }
+    ].map(function (s) {
+      return Object.assign({}, s, {
+        status: s.ok ? '成功' : '部分成功',
+        dot: s.ok ? '#3CCB8A' : '#F2B84B',
+        statusColor: s.ok ? '#6FD9A8' : '#F5C66E'
+      });
+    });
+    return {
+      awsLine: this.line(pa),
+      aliLine: this.line(pb),
+      awsArea: this.area(pa, 212),
+      aliArea: this.area(pb, 212),
+      hover: { x: pa[h][0].toFixed(1), awsY: pa[h][1].toFixed(1), aliY: pb[h][1].toFixed(1) },
+      types: types,
+      top: top,
+      exp: exp,
+      sync: sync
+    };
+  }
+}
+</script>
+</body>
+</html>
