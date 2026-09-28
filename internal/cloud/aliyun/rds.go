@@ -19,6 +19,9 @@ type rdsAPI interface {
 }
 
 func collectRDS(ctx context.Context, api rdsAPI, region string) ([]cloud.Resource, error) {
+	if err := skipRegion("rds", region); err != nil {
+		return nil, err
+	}
 	var out []cloud.Resource
 	for page := int32(1); page < 1000; page++ {
 		resp, err := api.DescribeDBInstancesWithContext(ctx, &rds.DescribeDBInstancesRequest{

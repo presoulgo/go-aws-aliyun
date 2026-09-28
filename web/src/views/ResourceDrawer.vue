@@ -125,6 +125,8 @@ interface Panel {
   keys: string[]
   labels: string[]
   note?: string
+  /** 没有数据时的提示，默认用 note。 */
+  empty?: string
   colors: string[]
 }
 
@@ -162,6 +164,29 @@ const panels = computed<Panel[]>(() => {
       { title: '活跃连接数', keys: ['active_conn'], labels: ['当前'], colors: [blue] },
       { title: '新建连接数', keys: ['new_conn'], labels: ['当前'], colors: [blue] },
       { title: '流量', keys: ['traffic'], labels: ['当前'], colors: [blue] },
+    ]
+  } else if (d.type === 'bucket') {
+    // 存储量和对象数是云厂商定时统计的：阿里云每小时一次，AWS 每天一次。
+    const daily = d.provider === 'aws'
+    defs = [
+      {
+        title: '存储量',
+        keys: ['storage'],
+        labels: ['当前'],
+        colors: [blue],
+        note: daily ? '每天统计一次' : '每小时统计一次',
+        empty: daily ? 'AWS 每天统计一次，请切到 7 天查看' : '每小时统计一次，请切到 6 小时以上查看',
+      },
+      {
+        title: '对象数',
+        keys: ['objects'],
+        labels: ['当前'],
+        colors: [green],
+        note: '每天统计一次',
+        empty: 'AWS 每天统计一次，请切到 7 天查看',
+      },
+      { title: '请求数', keys: ['requests'], labels: ['当前'], colors: [blue] },
+      { title: '公网流量', keys: ['net_in', 'net_out'], labels: ['流入', '流出'], colors: [blue, orange] },
     ]
   }
   const supported = new Set(d.supported_metrics)
@@ -385,7 +410,7 @@ function compare() {
                   compact
                   :dim="metricsLoading && !!metrics"
                   :label="`${p.title}趋势`"
-                  :empty-text="metricsLoading ? '加载中…' : p.note ? `暂无数据（${p.note}）` : '暂无数据'"
+                  :empty-text="metricsLoading ? '加载中…' : (p.empty ?? (p.note ? `暂无数据（${p.note}）` : '暂无数据'))"
                 />
               </section>
             </div>
@@ -439,7 +464,11 @@ function compare() {
           <span class="ellipsis">
             最后同步 {{ dayjs(detail.synced_at).format('HH:mm:ss') }} · 来自账号「{{ detail.account_name }}」
           </span>
-          <el-button v-if="detail.supported_metrics.length" class="compare" @click="compare">
+          <el-button
+            v-if="detail.supported_metrics.length && detail.type !== 'bucket'"
+            class="compare"
+            @click="compare"
+          >
             <AppIcon name="monitor" :size="15" />
             <span class="btn-gap">在监控中心对比</span>
           </el-button>

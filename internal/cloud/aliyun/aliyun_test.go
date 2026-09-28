@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"slices"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -154,6 +158,36 @@ func TestCollectLBPartialFailure(t *testing.T) {
 	}
 }
 
+type eofRDS struct{}
+
+func (eofRDS) DescribeDBInstancesWithContext(ctx context.Context, req *rds.DescribeDBInstancesRequest, _ *dara.RuntimeOptions) (*rds.DescribeDBInstancesResponse, error) {
+	return nil, io.EOF
+}
+
+func (eofRDS) DescribeDBInstanceAttributeWithContext(ctx context.Context, req *rds.DescribeDBInstanceAttributeRequest, _ *dara.RuntimeOptions) (*rds.DescribeDBInstanceAttributeResponse, error) {
+	return nil, io.EOF
+}
+
+// The endpoints of these product regions only close the connection (EOF); they
+// are skipped without a call, while EOF anywhere else is still reported.
+func TestSkipRegionsWithoutProduct(t *testing.T) {
+	if _, err := collectRDS(context.Background(), eofRDS{}, "eu-west-3"); !errors.Is(err, cloud.ErrRegionUnsupported) {
+		t.Fatalf("RDS in eu-west-3 must be skipped: %v", err)
+	}
+	if _, err := collectRDS(context.Background(), eofRDS{}, "eu-central-1"); err == nil || errors.Is(err, cloud.ErrRegionUnsupported) {
+		t.Fatalf("EOF in other regions must stay an error: %v", err)
+	}
+	for _, region := range []string{"cn-huhehaote", "eu-west-3"} {
+		res, err := collectLB(context.Background(), fakeCLB{}, failingALB{err: io.EOF}, region)
+		if err != nil || len(res) != 1 {
+			t.Fatalf("ALB in %s must be skipped and CLB kept: %d %v", region, len(res), err)
+		}
+	}
+	if _, err := collectLB(context.Background(), fakeCLB{}, failingALB{err: io.EOF}, "cn-hangzhou"); err == nil {
+		t.Fatal("ALB EOF in a region that offers ALB must be reported")
+	}
+}
+
 type fakeCMS struct{ calls []string }
 
 func (f *fakeCMS) DescribeMetricListWithContext(ctx context.Context, req *cms.DescribeMetricListRequest, _ *dara.RuntimeOptions) (*cms.DescribeMetricListResponse, error) {
@@ -186,6 +220,82 @@ func TestQueryMetricsSumsSources(t *testing.T) {
 	}
 	if len(api.calls) != 3 {
 		t.Fatalf("expected intranet + internet + VPC public queries, got %v", api.calls)
+	}
+}
+
+var ossBase = time.Date(2026, 9, 28, 10, 0, 0, 0, time.UTC)
+
+// ossCMS serves OSS metrics: requests and traffic once a minute from ossBase
+// for 7 minutes, storage once an hour.
+type ossCMS struct {
+	reqs []*cms.DescribeMetricListRequest
+}
+
+func (f *ossCMS) DescribeMetricListWithContext(ctx context.Context, req *cms.DescribeMetricListRequest, _ *dara.RuntimeOptions) (*cms.DescribeMetricListResponse, error) {
+	f.reqs = append(f.reqs, req)
+	var pts []string
+	add := func(ts time.Time, v float64) {
+		pts = append(pts, fmt.Sprintf(`{"timestamp":%d,"BucketName":"logs","userId":"1","Value":%g}`, ts.UnixMilli(), v))
+	}
+	switch name := dara.StringValue(req.MetricName); name {
+	case "TotalRequestCount", "InternetSend":
+		v := 120.0
+		if name == "InternetSend" {
+			v = 60e6
+		}
+		for m := range 7 {
+			add(ossBase.Add(time.Duration(m)*time.Minute), v)
+		}
+	case "MeteringStorageUtilization":
+		add(ossBase, 1<<30)
+	}
+	body := &cms.DescribeMetricListResponseBody{Success: dara.Bool(true), Datapoints: dara.String("[" + strings.Join(pts, ",") + "]")}
+	return &cms.DescribeMetricListResponse{Body: body}, nil
+}
+
+// OSS reports requests and traffic per minute: each point sums its minutes
+// into a per-second rate, and the unfinished last point only counts the
+// minutes elapsed. Storage is reported hourly and read at that period.
+func TestQueryMetricsBucket(t *testing.T) {
+	api := &ossCMS{}
+	ref := cloud.ResourceRef{Type: model.TypeBucket, Region: "cn-hangzhou", ResourceID: "logs"}
+	series, err := queryMetrics(context.Background(), api, ref, cloud.MetricQuery{
+		Keys:  []string{cloud.MetricRequests, cloud.MetricNetOut, cloud.MetricStorage},
+		Start: ossBase.Add(2 * time.Minute), End: ossBase.Add(7 * time.Minute), Period: 5 * time.Minute,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string][]cloud.Point{}
+	for _, s := range series {
+		got[s.Key] = s.Points
+	}
+	// 5 × 120 requests over 300s, then 2 × 120 over the 120s elapsed.
+	if p := got[cloud.MetricRequests]; len(p) != 2 || p[0][1] != 2 || p[1][1] != 2 {
+		t.Fatalf("requests = %v", p)
+	}
+	// 60 MB a minute is 8 Mbit/s.
+	if p := got[cloud.MetricNetOut]; len(p) != 2 || p[0][1] != 8e6 || p[1][1] != 8e6 {
+		t.Fatalf("net_out = %v", p)
+	}
+	if p := got[cloud.MetricStorage]; len(p) != 1 || p[0][1] != 1<<30 {
+		t.Fatalf("storage = %v", p)
+	}
+	for _, req := range api.reqs {
+		name, period := dara.StringValue(req.MetricName), dara.StringValue(req.Period)
+		want := "60"
+		if name == "MeteringStorageUtilization" {
+			want = "3600"
+		}
+		if period != want || dara.StringValue(req.Namespace) != "acs_oss_dashboard" || dara.StringValue(req.Dimensions) != `[{"BucketName":"logs"}]` {
+			t.Fatalf("%s: period %s, namespace %s, dimensions %s", name, period, dara.StringValue(req.Namespace), dara.StringValue(req.Dimensions))
+		}
+		if want == "60" && dara.StringValue(req.StartTime) != strconv.FormatInt(ossBase.UnixMilli(), 10) {
+			t.Fatalf("%s must start at the aligned point, got %s", name, dara.StringValue(req.StartTime))
+		}
+	}
+	if keys := SupportedMetrics(ref); len(keys) != 4 || slices.Contains(keys, cloud.MetricObjects) {
+		t.Fatalf("oss metrics = %v", keys)
 	}
 }
 

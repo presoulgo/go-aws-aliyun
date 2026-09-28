@@ -3,6 +3,8 @@ package demo
 import (
 	"context"
 	"errors"
+	"math"
+	"slices"
 	"testing"
 	"time"
 
@@ -118,6 +120,49 @@ func TestFailureInjectionAndMetrics(t *testing.T) {
 	again, _ := p.QueryMetrics(context.Background(), shop, ref, cloud.MetricQuery{Keys: []string{cloud.MetricCPU}, Start: end.Add(-6 * time.Hour), End: end, Period: 5 * time.Minute})
 	if again[0].Points[10] != series[0].Points[10] {
 		t.Fatal("metrics must be reproducible")
+	}
+}
+
+// Bucket size follows the real clouds' reporting periods (Alibaba Cloud hourly,
+// AWS daily) and ends at the size shown in the resource list.
+func TestBucketMetrics(t *testing.T) {
+	end := time.Now()
+	cases := []struct {
+		p    *Provider
+		ak   string
+		span time.Duration
+		step time.Duration
+		keys []string
+	}{
+		{NewAliyun().WithoutDelay(), akAliMain, 6 * time.Hour, time.Hour, []string{cloud.MetricStorage, cloud.MetricRequests, cloud.MetricNetIn, cloud.MetricNetOut}},
+		{NewAWS().WithoutDelay(), akAWSProd, 7 * 24 * time.Hour, 24 * time.Hour, []string{cloud.MetricStorage, cloud.MetricObjects}},
+	}
+	for _, c := range cases {
+		cred := cloud.Credential{AccessKeyID: c.ak, AccessKeySecret: demoSecret}
+		buckets, err := c.p.Collect(context.Background(), cred, model.TypeBucket, "")
+		if err != nil || len(buckets) == 0 {
+			t.Fatalf("%s buckets: %v %d", c.p.Name(), err, len(buckets))
+		}
+		b := buckets[0]
+		ref := cloud.ResourceRef{Type: model.TypeBucket, Region: b.Region, ResourceID: b.ResourceID, Extra: b.Extra}
+		if got := c.p.SupportedMetrics(ref); !slices.Equal(got, c.keys) {
+			t.Fatalf("%s bucket metrics = %v", c.p.Name(), got)
+		}
+		series, err := c.p.QueryMetrics(context.Background(), cred, ref, cloud.MetricQuery{Keys: c.keys, Start: end.Add(-c.span), End: end, Period: 5 * time.Minute})
+		if err != nil {
+			t.Fatal(err)
+		}
+		pts := series[0].Points
+		if len(pts) < 2 || time.Duration(pts[1][0]-pts[0][0])*time.Millisecond != c.step {
+			t.Fatalf("%s storage points = %v", c.p.Name(), pts)
+		}
+		size, _ := cloud.ExtraFloat(b.Extra, "size_bytes")
+		if last := pts[len(pts)-1][1]; math.Abs(last-size)/size > 0.02 {
+			t.Fatalf("%s storage ends at %v, bucket size is %v", c.p.Name(), last, size)
+		}
+		if n := len(series[1].Points); c.step == time.Hour && n < 70 {
+			t.Fatalf("requests at 5 minutes over 6h should give ~72 points, got %d", n)
+		}
 	}
 }
 

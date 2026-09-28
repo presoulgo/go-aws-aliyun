@@ -25,6 +25,14 @@ type cmsSource struct {
 	namespace string
 	metric    string
 	dimKey    string
+	// minPeriod is the reporting period of metrics published less often than
+	// every minute; they are never queried at a finer period.
+	minPeriod time.Duration
+	// perMinute sources report an amount per minute (requests, bytes). They are
+	// read per minute and summed into a per-second rate over each point,
+	// multiplied by scale (8 turns bytes into bits).
+	perMinute bool
+	scale     float64
 }
 
 type cmsPlan struct {
@@ -93,6 +101,21 @@ func planFor(ref cloud.ResourceRef, key string) (cmsPlan, bool) {
 				return s(ns, dk, "LoadBalancerInBits", "LoadBalancerOutBits")
 			}
 		}
+	case model.TypeBucket:
+		const ns, dk = "acs_oss_dashboard", "BucketName"
+		rate := func(metric string, scale float64) (cmsPlan, bool) {
+			return cmsPlan{sources: []cmsSource{{namespace: ns, metric: metric, dimKey: dk, perMinute: true, scale: scale}}}, true
+		}
+		switch key {
+		case cloud.MetricStorage:
+			return cmsPlan{sources: []cmsSource{{namespace: ns, metric: "MeteringStorageUtilization", dimKey: dk, minPeriod: time.Hour}}}, true
+		case cloud.MetricRequests:
+			return rate("TotalRequestCount", 1)
+		case cloud.MetricNetIn:
+			return rate("InternetRecv", 8)
+		case cloud.MetricNetOut:
+			return rate("InternetSend", 8)
+		}
 	}
 	return cmsPlan{}, false
 }
@@ -114,6 +137,7 @@ type datapoint struct {
 	LBID       string   `json:"loadBalancerId"`
 	Average    *float64 `json:"Average"`
 	Value      *float64 `json:"Value"`
+	Sum        *float64 `json:"Sum"`
 	Maximum    *float64 `json:"Maximum"`
 }
 
@@ -123,6 +147,8 @@ func (d datapoint) value() (float64, bool) {
 		return *d.Average, true
 	case d.Value != nil:
 		return *d.Value, true
+	case d.Sum != nil:
+		return *d.Sum, true
 	case d.Maximum != nil:
 		return *d.Maximum, true
 	}
@@ -195,7 +221,14 @@ func queryMetrics(ctx context.Context, api cmsAPI, ref cloud.ResourceRef, q clou
 		}
 		sums := map[int64]float64{}
 		for _, src := range plan.sources {
-			dps, err := describeMetricList(ctx, api, ref.Region, src.namespace, src.metric, dimensions(src.dimKey, ref.ResourceID), period, q.Start, q.End)
+			p, start := period, q.Start
+			switch {
+			case src.perMinute:
+				p, start = time.Minute, q.Start.Truncate(period)
+			case src.minPeriod > p:
+				p = src.minPeriod
+			}
+			dps, err := describeMetricList(ctx, api, ref.Region, src.namespace, src.metric, dimensions(src.dimKey, ref.ResourceID), p, start, q.End)
 			if err != nil {
 				// A metric the resource does not publish is not fatal.
 				if errors.Is(err, cloud.ErrRegionUnsupported) {
@@ -203,10 +236,24 @@ func queryMetrics(ctx context.Context, api cmsAPI, ref cloud.ResourceRef, q clou
 				}
 				return nil, err
 			}
+			step, end := period.Milliseconds(), q.End.UnixMilli()
 			for _, dp := range dps {
-				if v, ok := dp.value(); ok {
-					sums[dp.Timestamp] += v
+				v, ok := dp.value()
+				if !ok {
+					continue
 				}
+				ts := dp.Timestamp
+				if src.perMinute {
+					// Sum the minutes of each point into a per-second rate; the
+					// current, unfinished point only counts the time elapsed.
+					ts -= ts % step
+					span := min(ts+step, end) - ts
+					if span <= 0 {
+						continue
+					}
+					v = v * src.scale / (float64(span) / 1000)
+				}
+				sums[ts] += v
 			}
 		}
 		def, _ := cloud.LookupMetric(ref.Type, key)

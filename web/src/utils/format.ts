@@ -110,7 +110,9 @@ function formatCount(v: number, perSecond: boolean): string {
   if (abs >= 1e8) s = (v / 1e8).toFixed(1) + ' 亿'
   else if (abs >= 1e4) s = (v / 1e4).toFixed(1) + ' 万'
   else if (abs >= 100 || Number.isInteger(v)) s = Math.round(v).toLocaleString('zh-CN')
-  else s = v.toFixed(1)
+  else if (abs >= 1) s = v.toFixed(1)
+  // 访问很少的存储桶每秒请求不到 1 次，保留两位有效数字，避免显示成 0.0。
+  else s = String(+v.toPrecision(2))
   return perSecond ? `${s}/s` : s
 }
 
@@ -148,6 +150,7 @@ export function formatAxis(v: number, unit: MetricUnit | string): string {
       const abs = Math.abs(v)
       if (abs >= 1e8) return `${+(v / 1e8).toFixed(1)}亿`
       if (abs >= 1e4) return `${+(v / 1e4).toFixed(1)}万`
+      if (abs > 0 && abs < 1) return `${+v.toPrecision(2)}`
       return `${+v.toFixed(abs < 10 ? 1 : 0)}`
     }
   }

@@ -31,6 +31,9 @@ const (
 	MetricActiveConn  = "active_conn"
 	MetricNewConn     = "new_conn"
 	MetricTraffic     = "traffic"
+	MetricStorage     = "storage"
+	MetricObjects     = "objects"
+	MetricRequests    = "requests"
 )
 
 // MetricDef is a standard metric shared by all clouds.
@@ -64,6 +67,12 @@ var Catalog = []MetricDef{
 	{Type: model.TypeLB, Key: MetricActiveConn, Name: "活跃连接数", Unit: UnitCount, Providers: both},
 	{Type: model.TypeLB, Key: MetricNewConn, Name: "新建连接数", Unit: UnitCountPerS, Providers: both},
 	{Type: model.TypeLB, Key: MetricTraffic, Name: "流量", Unit: UnitBitsPerS, Providers: both},
+
+	{Type: model.TypeBucket, Key: MetricStorage, Name: "存储量", Unit: UnitBytes, Providers: both, Note: "阿里云每小时、AWS 每天统计一次"},
+	{Type: model.TypeBucket, Key: MetricObjects, Name: "对象数", Unit: UnitCount, Providers: []string{model.ProviderAWS}, Note: "每天统计一次"},
+	{Type: model.TypeBucket, Key: MetricRequests, Name: "请求数", Unit: UnitCountPerS, Providers: []string{model.ProviderAliyun}},
+	{Type: model.TypeBucket, Key: MetricNetIn, Name: "公网流入", Unit: UnitBitsPerS, Providers: []string{model.ProviderAliyun}},
+	{Type: model.TypeBucket, Key: MetricNetOut, Name: "公网流出", Unit: UnitBitsPerS, Providers: []string{model.ProviderAliyun}},
 }
 
 // MetricsFor returns the catalog entries of a resource type.

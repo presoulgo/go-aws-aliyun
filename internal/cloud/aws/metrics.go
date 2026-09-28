@@ -124,6 +124,22 @@ func planFor(ref cloud.ResourceRef, key string) (cwPlan, bool) {
 		case cloud.MetricTraffic:
 			return cwPlan{sources: []cwSource{src(ns, "ProcessedBytes", "Sum", bitsPerSecond, d)}}, true
 		}
+	case model.TypeBucket:
+		// S3 publishes storage metrics once a day, per storage type.
+		b := dim("BucketName", ref.ResourceID)
+		daily := func(sources ...cwSource) (cwPlan, bool) {
+			return cwPlan{sources: sources, minPeriod: 24 * time.Hour}, true
+		}
+		switch key {
+		case cloud.MetricStorage:
+			sources := make([]cwSource, 0, len(s3StorageTypes))
+			for _, st := range s3StorageTypes {
+				sources = append(sources, src("AWS/S3", "BucketSizeBytes", "Average", identity, b, dim("StorageType", st)))
+			}
+			return daily(sources...)
+		case cloud.MetricObjects:
+			return daily(src("AWS/S3", "NumberOfObjects", "Average", identity, b, dim("StorageType", "AllStorageTypes")))
+		}
 	}
 	return cwPlan{}, false
 }

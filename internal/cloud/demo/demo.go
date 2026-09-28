@@ -207,8 +207,9 @@ func (p *Provider) QueryMetrics(ctx context.Context, cred cloud.Credential, ref 
 		}
 		def, _ := cloud.LookupMetric(ref.Type, key)
 		s := cloud.Series{Key: key, Unit: def.Unit, Points: []cloud.Point{}}
+		step := max(period, sparsePeriod(p.name, ref.Type, key))
 		if status == model.StatusRunning || status == "" {
-			for t := q.Start.Truncate(period); !t.After(q.End); t = t.Add(period) {
+			for t := q.Start.Truncate(step); !t.After(q.End); t = t.Add(step) {
 				if t.Before(q.Start) {
 					continue
 				}
@@ -411,8 +412,38 @@ func metricAt(ref cloud.ResourceRef, key string, d *accountData, t, now time.Tim
 		case cloud.MetricTraffic:
 			return math.Max(0, pick(20, 580)*1e6*(1+0.45*day)*(1+0.15*n))
 		}
+	case model.TypeBucket:
+		// Buckets grow 0.2%–1% a day and reach today's size and count now.
+		ago := now.Sub(t).Hours() / 24
+		growth := 0.002 + float64(seed%9)*0.001
+		switch key {
+		case cloud.MetricStorage:
+			size, _ := cloud.ExtraFloat(ref.Extra, "size_bytes")
+			return math.Max(0, math.Round(size*(1-growth*ago)*(1+0.001*n)))
+		case cloud.MetricObjects:
+			count, _ := cloud.ExtraFloat(ref.Extra, "object_count")
+			return math.Max(0, math.Round(count*(1-growth*ago)))
+		case cloud.MetricRequests:
+			return math.Max(0, pick(2, 260)*(1+0.6*day)*(1+0.2*n))
+		case cloud.MetricNetIn:
+			return math.Max(0, pick(1, 30)*1e6*(1+0.5*day)*(1+0.2*n))
+		case cloud.MetricNetOut:
+			return math.Max(0, pick(4, 120)*1e6*(1+0.5*day)*(1+0.2*n))
+		}
 	}
 	return 0
+}
+
+// sparsePeriod is how often the real clouds report bucket size and object
+// count: Alibaba Cloud hourly, AWS daily. Other metrics follow the query.
+func sparsePeriod(provider, typ, key string) time.Duration {
+	if typ != model.TypeBucket || (key != cloud.MetricStorage && key != cloud.MetricObjects) {
+		return 0
+	}
+	if provider == model.ProviderAWS {
+		return 24 * time.Hour
+	}
+	return time.Hour
 }
 
 func clamp(v, lo, hi float64) float64 { return math.Max(lo, math.Min(hi, v)) }

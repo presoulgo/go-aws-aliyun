@@ -90,7 +90,8 @@ const option = computed<EChartsOption>(() => {
     type: 'line',
     name: s.name,
     data: withGaps(s.points),
-    showSymbol: false,
+    // 点很少时（比如存储量每小时或每天才统计一次）画出数据点，只有一个点也看得见。
+    showSymbol: s.points.filter((p) => p[1] !== null).length <= 12,
     symbol: 'circle',
     symbolSize: 8,
     connectNulls: false,
@@ -148,7 +149,13 @@ const option = computed<EChartsOption>(() => {
       axisLine: { show: false },
       axisTick: { show: false },
       splitLine: { lineStyle: { color: chartColors.grid, width: 1, type: 'solid' } },
-      axisLabel: { ...axisLabel, fontSize: compact ? 10 : 11, formatter: (v: number) => formatAxis(v, props.unit) },
+      // 没有数据时刻度没有意义，只留网格和提示文字。
+      axisLabel: {
+        ...axisLabel,
+        show: hasData.value,
+        fontSize: compact ? 10 : 11,
+        formatter: (v: number) => formatAxis(v, props.unit),
+      },
     },
     tooltip: {
       ...tooltipBase,
@@ -180,7 +187,9 @@ const option = computed<EChartsOption>(() => {
 <template>
   <figure class="metric-chart" :class="{ dim }" :style="{ height: `${height}px` }" role="img" :aria-label="label">
     <VChart :option="option" autoresize class="chart" />
-    <div v-if="!hasData" class="nodata">{{ emptyText }}</div>
+    <div v-if="!hasData" class="nodata">
+      <span>{{ emptyText }}</span>
+    </div>
   </figure>
 </template>
 
@@ -201,14 +210,21 @@ const option = computed<EChartsOption>(() => {
   height: 100%;
 }
 
+/* 没有数据时纵轴不显示刻度，提示居中；底色挡住穿过的网格线。 */
 .nodata {
   position: absolute;
-  inset: 0 0 24px 40px;
+  inset: 0 0 24px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0 8px;
   font-size: 12px;
   color: var(--ys-text-muted);
+  text-align: center;
   pointer-events: none;
+}
+.nodata span {
+  padding: 2px 8px;
+  background: var(--ys-surface);
 }
 </style>

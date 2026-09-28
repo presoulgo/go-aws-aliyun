@@ -1,6 +1,29 @@
 package aliyun
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/presoulgo/go-aws-aliyun/internal/cloud"
+)
+
+// notOffered lists regions where Alibaba Cloud does not provide a product.
+// ECS lists these regions and the SDK still builds an endpoint for them, but
+// the endpoint only closes the connection (EOF), so collectors skip them
+// without calling the API.
+var notOffered = map[string]map[string]bool{
+	"rds": {"eu-west-3": true},
+	"alb": {"cn-huhehaote": true, "eu-west-3": true},
+}
+
+// skipRegion returns ErrRegionUnsupported when product is not offered in region.
+func skipRegion(product, region string) error {
+	if notOffered[product][region] {
+		return cloud.Wrap(cloud.ErrRegionUnsupported, fmt.Errorf("阿里云未在 %s 提供 %s", region, strings.ToUpper(product)))
+	}
+	return nil
+}
 
 var regionNames = map[string]string{
 	"cn-qingdao":     "华北1（青岛）",

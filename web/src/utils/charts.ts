@@ -94,7 +94,9 @@ export function niceCeil(v: number): number {
  * cap 用于百分比这类有上限的指标。
  */
 export function niceScale(peak: number, ticks = 4, cap?: number): { max: number; interval: number } {
-  const top = Math.max(peak * 1.1, Number.EPSILON)
+  // 全是 0（比如一段时间没有请求、空存储桶）时用整数刻度，而不是极小的刻度。
+  if (!(peak > 0)) return { max: ticks, interval: 1 }
+  const top = peak * 1.1
   let interval = niceCeil(top / ticks)
   let max = Math.ceil(top / interval) * interval
   if (cap !== undefined && max > cap) {

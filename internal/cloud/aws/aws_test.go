@@ -132,8 +132,9 @@ func TestNormalizeRDSStatus(t *testing.T) {
 
 // fakeCW returns a constant value per metric name at two timestamps.
 type fakeCW struct {
-	values map[string]float64
-	calls  int
+	values  map[string]float64
+	calls   int
+	periods []int32
 }
 
 func (f *fakeCW) GetMetricData(ctx context.Context, in *cloudwatch.GetMetricDataInput, _ ...func(*cloudwatch.Options)) (*cloudwatch.GetMetricDataOutput, error) {
@@ -141,6 +142,7 @@ func (f *fakeCW) GetMetricData(ctx context.Context, in *cloudwatch.GetMetricData
 	t0 := in.StartTime.Truncate(time.Hour)
 	var results []cwtypes.MetricDataResult
 	for _, q := range in.MetricDataQueries {
+		f.periods = append(f.periods, aws.ToInt32(q.MetricStat.Period))
 		name := aws.ToString(q.MetricStat.Metric.MetricName)
 		v, ok := f.values[name]
 		if !ok {
@@ -206,6 +208,34 @@ func TestQueryMetricsConversions(t *testing.T) {
 	}
 	if contains(SupportedMetrics(cloud.ResourceRef{Type: model.TypeRDS}), cloud.MetricDiskUtil) {
 		t.Error("disk_util needs allocated storage")
+	}
+}
+
+// S3 reports bucket size per storage type once a day: the types add up and
+// the query never asks for a finer period.
+func TestBucketMetrics(t *testing.T) {
+	cw := &fakeCW{values: map[string]float64{"BucketSizeBytes": 1 << 30, "NumberOfObjects": 5000}}
+	now := time.Date(2026, 9, 28, 12, 0, 0, 0, time.UTC)
+	ref := cloud.ResourceRef{Type: model.TypeBucket, ResourceID: "logs"}
+	if keys := SupportedMetrics(ref); len(keys) != 2 || keys[0] != cloud.MetricStorage || keys[1] != cloud.MetricObjects {
+		t.Fatalf("s3 metrics = %v", keys)
+	}
+	series, err := queryMetrics(context.Background(), cw, ref, cloud.MetricQuery{
+		Keys: []string{cloud.MetricStorage, cloud.MetricObjects}, Start: now.Add(-7 * 24 * time.Hour), End: now, Period: time.Hour,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v := series[0].Points[0][1]; v != float64(len(s3StorageTypes))*(1<<30) {
+		t.Fatalf("storage = %v", v)
+	}
+	if v := series[1].Points[0][1]; v != 5000 {
+		t.Fatalf("objects = %v", v)
+	}
+	for _, p := range cw.periods {
+		if p != 86400 {
+			t.Fatalf("S3 metrics must be read daily, got period %d", p)
+		}
 	}
 }
 

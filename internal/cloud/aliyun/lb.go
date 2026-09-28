@@ -153,6 +153,9 @@ func clbResource(lb *slb.DescribeLoadBalancersResponseBodyLoadBalancersLoadBalan
 }
 
 func collectALB(ctx context.Context, api albAPI, region string) ([]cloud.Resource, error) {
+	if err := skipRegion("alb", region); err != nil {
+		return nil, err
+	}
 	req := &alb.ListLoadBalancersRequest{MaxResults: dara.Int32(100)}
 	var out []cloud.Resource
 	for page := 0; page < 1000; page++ {
