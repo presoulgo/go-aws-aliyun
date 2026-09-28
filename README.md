@@ -38,7 +38,7 @@ $env:OPS_DB_PATH='data/ops.db'
 
 管理员可新增和测试云账号、触发或取消同步、管理用户及查看审计日志。只读用户可查看概览、资源和监控；写接口在服务端返回 403。账号 Secret 使用 AES-GCM 加密存储，接口不返回 Secret。
 
-资源同步按账号地域并发执行。AWS 分别采集 EC2、RDS、ELBv2、S3；阿里云分别采集 ECS、RDS、CLB、ALB、OSS。每个成功任务会更新该范围资源，并删除该范围中已消失的资源；失败、跳过或取消的范围保留旧资源。主机 CPU 指标以限流并发方式采集。服务每 30 分钟自动同步启用账号，审计日志保留 180 天，CPU 小时数据保留 8 天。监控按需从 CloudWatch 或 CloudMonitor 查询，成功结果在内存缓存 2 分钟。
+资源同步按账号地域并发执行。AWS 分别采集 EC2、RDS、ELBv2、S3；阿里云分别采集 ECS、RDS、CLB、ALB、OSS。除基础清单外，同步会读取资源标签、网络属性、数据库容量与连接信息，以及对象存储容量和对象数。单个云 API 任务最长执行 3 分钟。每个成功任务会更新该范围资源，并删除该范围中已消失的资源；失败、跳过或取消的范围保留旧资源。主机 CPU 指标以限流并发方式采集。服务每 30 分钟自动同步启用账号，审计日志保留 180 天，CPU 小时数据保留 8 天。监控按需从 CloudWatch 或 CloudMonitor 查询，成功结果在内存缓存 2 分钟。
 
 ## 只读云权限
 
@@ -46,9 +46,9 @@ AWS 使用 IAM 专用用户的 AccessKey，或再配置只读 AssumeRole ARN。�
 
 - `sts:GetCallerIdentity`
 - `ec2:DescribeRegions`、`ec2:DescribeInstances`、`ec2:DescribeInstanceTypes`
-- `rds:DescribeDBInstances`
-- `elasticloadbalancing:DescribeLoadBalancers`
-- `s3:ListAllMyBuckets`、`s3:GetBucketLocation`
+- `rds:DescribeDBInstances`、`rds:ListTagsForResource`
+- `elasticloadbalancing:DescribeLoadBalancers`、`elasticloadbalancing:DescribeTags`
+- `s3:ListAllMyBuckets`、`s3:GetBucketLocation`、`s3:GetBucketTagging`
 - `cloudwatch:GetMetricStatistics`、`cloudwatch:GetMetricData`
 
 AWS 中国区使用 `cn-north-1` 或 `cn-northwest-1` 的凭证与分区。阿里云使用 RAM 专用用户，授予 `AliyunECSReadOnlyAccess`、`AliyunRDSReadOnlyAccess`、`AliyunSLBReadOnlyAccess`、`AliyunALBReadOnlyAccess`、`AliyunOSSReadOnlyAccess` 和 `AliyunCloudMonitorReadOnlyAccess`，并允许 STS `GetCallerIdentity`。所有云操作只调用查询类 API。

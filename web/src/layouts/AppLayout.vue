@@ -10,7 +10,7 @@ let timer:any
 async function refresh(){try{sync.value=await get('/sync/status')}catch{}}
 function globalKey(e:KeyboardEvent){if(e.key==='/'&&!(e.target instanceof HTMLInputElement)){e.preventDefault();document.getElementById('global-search')?.focus()}}
 function goSearch(){if(search.value.trim())router.push({path:'/resources',query:{q:search.value.trim()}})}
-async function changePassword(){await put('/auth/password',password.value);ElMessage.success('密码已修改');passwordOpen.value=false;password.value={old_password:'',new_password:''}}
+async function changePassword(){await put('/auth/password',password.value);ElMessage.success('密码已修改，请重新登录');passwordOpen.value=false;password.value={old_password:'',new_password:''};auth.logout()}
 onMounted(()=>{refresh();timer=setInterval(refresh,60000);window.addEventListener('keydown',globalKey)})
 onUnmounted(()=>{clearInterval(timer);window.removeEventListener('keydown',globalKey)})
 </script>

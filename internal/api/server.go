@@ -22,6 +22,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 type Server struct {
@@ -147,7 +148,7 @@ func page(c *gin.Context) (int, int) {
 func user(c *gin.Context) model.User { return c.MustGet("user").(model.User) }
 
 func (s *Server) token(u model.User) (string, error) {
-	return jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"sub": fmt.Sprint(u.ID), "exp": time.Now().Add(24 * time.Hour).Unix()}).SignedString(s.TokenKey)
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"sub": fmt.Sprint(u.ID), "ver": u.TokenVersion, "exp": time.Now().Add(24 * time.Hour).Unix()}).SignedString(s.TokenKey)
 }
 func (s *Server) auth(c *gin.Context) {
 	raw := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
@@ -170,7 +171,8 @@ func (s *Server) auth(c *gin.Context) {
 	}
 	uid, _ := strconv.Atoi(fmt.Sprint(claims["sub"]))
 	var u model.User
-	if s.DB.First(&u, uid).Error != nil || !u.Enabled {
+	claimVersion, versionOK := claims["ver"].(float64)
+	if s.DB.First(&u, uid).Error != nil || !u.Enabled || !versionOK || uint(claimVersion) != u.TokenVersion {
 		fail(c, 401, "用户不可用")
 		c.Abort()
 		return
@@ -241,8 +243,8 @@ func (s *Server) password(c *gin.Context) {
 		OldPassword string `json:"old_password"`
 		NewPassword string `json:"new_password"`
 	}
-	if c.ShouldBindJSON(&in) != nil || len(in.NewPassword) < 10 {
-		fail(c, 400, "新密码至少 10 位")
+	if c.ShouldBindJSON(&in) != nil || !validPassword(in.NewPassword) {
+		fail(c, 400, "新密码至少 10 位，且必须包含字母和数字")
 		return
 	}
 	u := user(c)
@@ -251,7 +253,10 @@ func (s *Server) password(c *gin.Context) {
 		return
 	}
 	h, _ := bcrypt.GenerateFromPassword([]byte(in.NewPassword), bcrypt.DefaultCost)
-	s.DB.Model(&u).Update("password_hash", string(h))
+	if err := s.DB.Model(&u).Updates(map[string]any{"password_hash": string(h), "token_version": gorm.Expr("token_version + 1")}).Error; err != nil {
+		fail(c, 500, "密码保存失败")
+		return
+	}
 	s.log(c, "user", "change_password", "success", u.Username, "")
 	c.JSON(200, gin.H{"ok": true})
 }
@@ -259,12 +264,31 @@ func (s *Server) password(c *gin.Context) {
 func (s *Server) users(c *gin.Context) {
 	var items []model.User
 	s.DB.Order("id").Find(&items)
-	c.JSON(200, gin.H{"items": items, "total": len(items)})
+	now := time.Now()
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	var failures []struct {
+		Target string
+		Count  int64
+	}
+	s.DB.Model(&model.AuditLog{}).Select("target, count(*) as count").Where("category = ? AND action = ? AND result = ? AND created_at >= ?", "login", "login", "failed", start).Group("target").Scan(&failures)
+	failureByUser := make(map[string]int64, len(failures))
+	for _, failure := range failures {
+		failureByUser[failure.Target] = failure.Count
+	}
+	out := make([]gin.H, 0, len(items))
+	for _, item := range items {
+		out = append(out, gin.H{
+			"id": item.ID, "username": item.Username, "role": item.Role, "enabled": item.Enabled,
+			"locked_until": item.LockedUntil, "last_login_at": item.LastLoginAt, "last_login_ip": item.LastLoginIP,
+			"today_failed_logins": failureByUser[item.Username], "created_at": item.CreatedAt,
+		})
+	}
+	c.JSON(200, gin.H{"items": out, "total": len(out)})
 }
 func (s *Server) createUser(c *gin.Context) {
 	var in struct{ Username, Password, Role string }
-	if c.ShouldBindJSON(&in) != nil || strings.TrimSpace(in.Username) == "" || len(in.Password) < 10 || !(in.Role == "admin" || in.Role == "viewer") {
-		fail(c, 400, "用户名、角色和至少 10 位密码必填")
+	if c.ShouldBindJSON(&in) != nil || strings.TrimSpace(in.Username) == "" || !validPassword(in.Password) || !(in.Role == "admin" || in.Role == "viewer") {
+		fail(c, 400, "用户名、角色和至少 10 位且包含字母和数字的密码必填")
 		return
 	}
 	h, _ := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
@@ -328,17 +352,34 @@ func (s *Server) resetPassword(c *gin.Context) {
 		return
 	}
 	var in struct{ Password string }
-	if c.ShouldBindJSON(&in) != nil || len(in.Password) < 10 {
-		fail(c, 400, "密码至少 10 位")
+	if c.ShouldBindJSON(&in) != nil || !validPassword(in.Password) {
+		fail(c, 400, "密码至少 10 位，且必须包含字母和数字")
 		return
 	}
 	h, _ := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost)
-	if s.DB.Model(&model.User{}).Where("id = ?", id(c)).Update("password_hash", string(h)).RowsAffected == 0 {
+	result := s.DB.Model(&model.User{}).Where("id = ?", id(c)).Updates(map[string]any{"password_hash": string(h), "token_version": gorm.Expr("token_version + 1"), "failed_logins": 0, "locked_until": nil})
+	if result.Error != nil {
+		fail(c, 500, "密码保存失败")
+		return
+	}
+	if result.RowsAffected == 0 {
 		fail(c, 404, "用户不存在")
 		return
 	}
 	s.log(c, "user", "reset_password", "success", c.Param("id"), "")
 	c.JSON(200, gin.H{"ok": true})
+}
+
+func validPassword(value string) bool {
+	if len([]rune(value)) < 10 {
+		return false
+	}
+	var hasLetter, hasDigit bool
+	for _, r := range value {
+		hasLetter = hasLetter || unicode.IsLetter(r)
+		hasDigit = hasDigit || unicode.IsDigit(r)
+	}
+	return hasLetter && hasDigit
 }
 func (s *Server) auditLogs(c *gin.Context) {
 	q := s.DB.Model(&model.AuditLog{})
@@ -461,7 +502,7 @@ func (s *Server) testAccount(c *gin.Context) {
 }
 func (s *Server) createAccount(c *gin.Context) {
 	var in accountInput
-	if c.ShouldBindJSON(&in) != nil || in.Name == "" || (in.Provider != "aws" && in.Provider != "aliyun") {
+	if c.ShouldBindJSON(&in) != nil || strings.TrimSpace(in.Name) == "" || (in.Provider != "aws" && in.Provider != "aliyun") {
 		fail(c, 400, "账号信息不完整")
 		return
 	}
@@ -473,6 +514,14 @@ func (s *Server) createAccount(c *gin.Context) {
 		fail(c, 400, "AccessKey ID 必填")
 		return
 	}
+	partition := in.Partition
+	if partition == "" {
+		partition = "global"
+	}
+	if partition != "global" && partition != "china" {
+		fail(c, 400, "分区无效")
+		return
+	}
 	enc := ""
 	if in.Secret != "" {
 		var err error
@@ -482,14 +531,11 @@ func (s *Server) createAccount(c *gin.Context) {
 			return
 		}
 	}
-	credentialType := in.CredentialType
-	if credentialType == "" {
-		credentialType = "access_key"
-		if in.RoleARN != "" {
-			credentialType = "role"
-		}
+	credentialType := "access_key"
+	if strings.TrimSpace(in.RoleARN) != "" {
+		credentialType = "role"
 	}
-	a := model.CloudAccount{Name: strings.TrimSpace(in.Name), Provider: in.Provider, Partition: in.Partition, CredentialType: credentialType, AccessKeyID: strings.TrimSpace(in.AccessKeyID), SecretEncrypted: enc, RoleARN: strings.TrimSpace(in.RoleARN), Regions: strings.Join(splitRegions(in.Regions), ","), AutoRegions: in.AutoRegions, Note: strings.TrimSpace(in.Note), Enabled: true}
+	a := model.CloudAccount{Name: strings.TrimSpace(in.Name), Provider: in.Provider, Partition: partition, CredentialType: credentialType, AccessKeyID: strings.TrimSpace(in.AccessKeyID), SecretEncrypted: enc, RoleARN: strings.TrimSpace(in.RoleARN), Regions: strings.Join(splitRegions(in.Regions), ","), AutoRegions: in.AutoRegions, Note: strings.TrimSpace(in.Note), Enabled: true}
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
 	defer cancel()
 	identity, err := s.provider(in.Provider).Validate(ctx, a, in.Secret)
@@ -499,6 +545,10 @@ func (s *Server) createAccount(c *gin.Context) {
 	}
 	a.UID = identity.UID
 	if a.Regions == "" {
+		if !a.AutoRegions {
+			fail(c, 400, "请至少选择一个同步地域")
+			return
+		}
 		a.Regions = strings.Join(identity.Regions, ",")
 	}
 	if err := s.DB.Create(&a).Error; err != nil {
@@ -523,19 +573,21 @@ func (s *Server) updateAccount(c *gin.Context) {
 		return
 	}
 	before := a
-	if in.Name != "" {
-		a.Name = in.Name
+	if strings.TrimSpace(in.Name) != "" {
+		a.Name = strings.TrimSpace(in.Name)
 	}
 	if in.Partition != "" {
+		if in.Partition != "global" && in.Partition != "china" {
+			fail(c, 400, "分区无效")
+			return
+		}
 		a.Partition = in.Partition
 	}
 	if in.AccessKeyID != "" && !strings.Contains(in.AccessKeyID, "••••") {
-		a.AccessKeyID = in.AccessKeyID
+		a.AccessKeyID = strings.TrimSpace(in.AccessKeyID)
 	}
-	a.RoleARN = in.RoleARN
-	if in.CredentialType != "" {
-		a.CredentialType = in.CredentialType
-	} else if a.RoleARN != "" {
+	a.RoleARN = strings.TrimSpace(in.RoleARN)
+	if strings.TrimSpace(a.RoleARN) != "" {
 		a.CredentialType = "role"
 	} else {
 		a.CredentialType = "access_key"

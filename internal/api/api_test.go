@@ -91,6 +91,40 @@ func TestDemoFlowAndRBAC(t *testing.T) {
 	if w = call("GET", "/api/v1/audit-logs", viewer, nil); w.Code != 403 {
 		t.Fatalf("viewer audit status=%d", w.Code)
 	}
+	if w = call("POST", "/api/v1/auth/login", "", map[string]string{"username": "viewer", "password": "wrong-password"}); w.Code != 401 {
+		t.Fatalf("bad login status=%d", w.Code)
+	}
+	w = call("GET", "/api/v1/users", admin, nil)
+	var userList struct {
+		Items []struct {
+			Username          string `json:"username"`
+			TodayFailedLogins int    `json:"today_failed_logins"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &userList); err != nil {
+		t.Fatal(err)
+	}
+	foundFailure := false
+	for _, item := range userList.Items {
+		if item.Username == "viewer" && item.TodayFailedLogins == 1 {
+			foundFailure = true
+		}
+	}
+	if !foundFailure {
+		t.Fatalf("today login failures missing: %s", w.Body.String())
+	}
+	var viewerUser model.User
+	db.Where("username = ?", "viewer").First(&viewerUser)
+	if w = call("POST", fmt.Sprintf("/api/v1/users/%d/reset-password", viewerUser.ID), admin, map[string]string{"password": "letters-only-password"}); w.Code != 400 {
+		t.Fatalf("weak reset password status=%d", w.Code)
+	}
+	if w = call("POST", fmt.Sprintf("/api/v1/users/%d/reset-password", viewerUser.ID), admin, map[string]string{"password": "NewViewerPassword456"}); w.Code != 200 {
+		t.Fatalf("reset password status=%d: %s", w.Code, w.Body.String())
+	}
+	if w = call("GET", "/api/v1/dashboard/summary", viewer, nil); w.Code != 401 {
+		t.Fatalf("old token after reset status=%d", w.Code)
+	}
+	_ = login("viewer", "NewViewerPassword456")
 	var account model.CloudAccount
 	db.First(&account)
 	job := s.startSync(account, "admin")

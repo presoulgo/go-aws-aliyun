@@ -121,7 +121,7 @@ func state(v string) string {
 		return "running"
 	case "stopped", "inactive":
 		return "stopped"
-	case "starting", "creating", "modifying":
+	case "starting", "creating", "modifying", "activating", "restarting", "upgrading", "maintaining":
 		return "starting"
 	default:
 		return "abnormal"
@@ -131,7 +131,7 @@ func expiry(v string) *time.Time {
 	if v == "" {
 		return nil
 	}
-	for _, layout := range []string{"2006-01-02T15:04:05Z", "2006-01-02T15:04:05+08:00", "2006-01-02 15:04:05"} {
+	for _, layout := range []string{time.RFC3339, "2006-01-02 15:04:05"} {
 		if t, err := time.Parse(layout, v); err == nil {
 			return &t
 		}
@@ -239,12 +239,34 @@ func (Provider) List(ctx context.Context, a model.CloudAccount, secret, region, 
 				}
 				vcpu, _ := strconv.Atoi(str(v.DBInstanceCPU))
 				ex := map[string]any{"engine": str(v.Engine), "engine_version": str(v.EngineVersion), "vpc": str(v.VpcId), "vswitch": str(v.VSwitchId), "network_type": str(v.DBInstanceNetType), "pay_type": str(v.PayType)}
+				tagValues := map[string]string{}
+				expiresAt := expiry(str(v.ExpireTime))
+				endpoint := ""
 				attr, attrErr := cl.DescribeDBInstanceAttributeWithContext(ctx, new(rds.DescribeDBInstanceAttributeRequest).SetDBInstanceId(rid), runtime)
 				if attrErr == nil && attr.Body != nil && attr.Body.Items != nil && len(attr.Body.Items.DBInstanceAttribute) > 0 {
 					av := attr.Body.Items.DBInstanceAttribute[0]
 					ex["storage_gb"] = num(av.DBInstanceStorage)
+					ex["storage_type"] = str(av.DBInstanceStorageType)
+					ex["zone"] = str(av.ZoneId)
+					ex["max_connections"] = num(av.MaxConnections)
+					endpoint = str(av.ConnectionString)
+					ex["endpoint"] = endpoint
+					ex["port"] = str(av.Port)
+					if expiresAt == nil {
+						expiresAt = expiry(str(av.ExpireTime))
+					}
+				} else if attrErr != nil {
+					ex["attribute_error"] = attrErr.Error()
 				}
-				out = append(out, model.Resource{Provider: "aliyun", Type: "rds", Region: region, CloudID: rid, Name: name, Status: state(str(v.DBInstanceStatus)), Spec: str(v.DBInstanceClass), VCPU: vcpu, MemoryGB: float64(num(v.DBInstanceMemory)) / 1024, Tags: "{}", Extra: raw(ex), ExpiresAt: expiry(str(v.ExpireTime))})
+				tagResponse, tagErr := cl.DescribeTagsWithContext(ctx, new(rds.DescribeTagsRequest).SetRegionId(region).SetResourceType("INSTANCE").SetDBInstanceId(rid), runtime)
+				if tagErr == nil && tagResponse.Body != nil && tagResponse.Body.Items != nil {
+					for _, tag := range tagResponse.Body.Items.TagInfos {
+						tagValues[str(tag.TagKey)] = str(tag.TagValue)
+					}
+				} else if tagErr != nil {
+					ex["tag_error"] = tagErr.Error()
+				}
+				out = append(out, model.Resource{Provider: "aliyun", Type: "rds", Region: region, CloudID: rid, Name: name, Status: state(str(v.DBInstanceStatus)), IP: endpoint, Spec: str(v.DBInstanceClass), VCPU: vcpu, MemoryGB: float64(num(v.DBInstanceMemory)) / 1024, Tags: raw(tagValues), Extra: raw(ex), ExpiresAt: expiresAt})
 			}
 			if int(page)*100 >= num(resp.Body.TotalRecordCount) {
 				break
@@ -333,7 +355,35 @@ func (Provider) List(ctx context.Context, a model.CloudAccount, secret, region, 
 				return nil, err
 			}
 			for _, v := range resp.Buckets {
-				out = append(out, model.Resource{Provider: "aliyun", Type: "oss", Region: str(v.Region), CloudID: str(v.Name), Name: str(v.Name), Status: "running", Spec: str(v.StorageClass), Tags: "{}", Extra: raw(map[string]any{"location": str(v.Location), "storage_class": str(v.StorageClass)})})
+				name := str(v.Name)
+				bucketRegion := strings.TrimPrefix(str(v.Region), "oss-")
+				if bucketRegion == "" {
+					bucketRegion = strings.TrimPrefix(str(v.Location), "oss-")
+				}
+				if bucketRegion == "" {
+					bucketRegion = region
+				}
+				bucketClient := oss.NewClient(oss.LoadDefaultConfig().WithRegion(bucketRegion).WithCredentialsProvider(credentials.NewStaticCredentialsProvider(resolved.accessKeyID, resolved.accessKeySecret, resolved.securityToken)))
+				metadata := map[string]any{"location": str(v.Location), "storage_class": str(v.StorageClass), "created_at": v.CreationDate}
+				stat, statErr := bucketClient.GetBucketStat(ctx, &oss.GetBucketStatRequest{Bucket: &name})
+				if statErr == nil {
+					metadata["capacity_gb"] = float64(stat.Storage) / (1024 * 1024 * 1024)
+					metadata["object_count"] = stat.ObjectCount
+					metadata["multipart_upload_count"] = stat.MultipartUploadCount
+					metadata["stats_updated_at"] = time.Unix(stat.LastModifiedTime, 0)
+				} else {
+					metadata["stats_error"] = statErr.Error()
+				}
+				tagValues := map[string]string{}
+				tagResponse, tagErr := bucketClient.GetBucketTags(ctx, &oss.GetBucketTagsRequest{Bucket: &name})
+				if tagErr == nil && tagResponse.Tagging != nil && tagResponse.Tagging.TagSet != nil {
+					for _, tag := range tagResponse.Tagging.TagSet.Tags {
+						tagValues[str(tag.Key)] = str(tag.Value)
+					}
+				} else if tagErr != nil {
+					metadata["tag_error"] = tagErr.Error()
+				}
+				out = append(out, model.Resource{Provider: "aliyun", Type: "oss", Region: bucketRegion, CloudID: name, Name: name, Status: "running", Spec: str(v.StorageClass), Tags: raw(tagValues), Extra: raw(metadata)})
 			}
 			if !resp.IsTruncated || resp.NextMarker == nil {
 				break

@@ -69,7 +69,7 @@ func (s *Server) filters(c *gin.Context) {
 	var regions, statuses []string
 	s.resourceQuery(c).Distinct("region").Pluck("region", &regions)
 	s.resourceQuery(c).Distinct("status").Pluck("status", &statuses)
-	c.JSON(200, gin.H{"types": counts, "regions": regions, "statuses": statuses})
+	c.JSON(200, gin.H{"types": counts, "regions": regions, "statuses": statuses, "idle_cpu_threshold": s.Config.IdleCPU, "expiring_days": s.Config.ExpiringDays})
 }
 func (s *Server) resource(c *gin.Context) {
 	var r model.Resource
@@ -259,7 +259,7 @@ func (s *Server) summary(c *gin.Context) {
 			regions += len(strings.Split(list, ","))
 		}
 	}
-	c.JSON(200, gin.H{"accounts": accounts, "resources": resources, "running_vms": running, "total_vms": totalVM, "idle_vms": idle, "expiring": expiring, "next_expiring_days": nextDays, "regions": regions, "distribution": distribution, "cpu_curve": cpu, "top_cpu": top, "expiring_items": exp, "recent_sync": jobs, "demo": s.Config.Demo})
+	c.JSON(200, gin.H{"accounts": accounts, "resources": resources, "running_vms": running, "total_vms": totalVM, "idle_vms": idle, "idle_cpu_threshold": s.Config.IdleCPU, "expiring": expiring, "expiring_days": s.Config.ExpiringDays, "next_expiring_days": nextDays, "regions": regions, "distribution": distribution, "cpu_curve": cpu, "top_cpu": top, "expiring_items": exp, "recent_sync": jobs, "demo": s.Config.Demo})
 }
 
 func tags(r model.Resource) map[string]string {

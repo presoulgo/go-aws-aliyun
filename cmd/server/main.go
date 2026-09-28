@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"github.com/gin-gonic/gin"
 	"github.com/presoulgo/go-aws-aliyun/internal/api"
 	"github.com/presoulgo/go-aws-aliyun/internal/cloud/demo"
 	"github.com/presoulgo/go-aws-aliyun/internal/config"
@@ -17,12 +18,16 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
 
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		panic(err)
+	}
+	if os.Getenv("GIN_MODE") == "" {
+		gin.SetMode(gin.ReleaseMode)
 	}
 	if !cfg.Demo && cfg.SecretKey == "" {
 		slog.Error("OPS_SECRET_KEY must be set outside demo mode")
@@ -79,8 +84,15 @@ func main() {
 		f.Close()
 		http.FileServer(http.FS(dist)).ServeHTTP(w, r)
 	})
-	server := &http.Server{Addr: cfg.Address, Handler: s.Router(static)}
-	go func() { <-ctx.Done(); server.Shutdown(context.Background()) }()
+	server := &http.Server{Addr: cfg.Address, Handler: s.Router(static), ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second}
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			slog.Error("服务停止失败", "error", err)
+		}
+	}()
 	slog.Info("云枢已启动", "address", cfg.Address)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		panic(err)

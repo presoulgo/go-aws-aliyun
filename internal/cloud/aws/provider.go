@@ -76,7 +76,7 @@ func status(v string) string {
 		return "running"
 	case "stopped", "stopping":
 		return "stopped"
-	case "pending", "starting", "modifying", "creating":
+	case "pending", "starting", "modifying", "creating", "provisioning", "rebooting", "backing-up", "storage-optimization", "upgrading", "renaming", "resetting-master-credentials":
 		return "starting"
 	default:
 		return "abnormal"
@@ -185,7 +185,44 @@ func (Provider) List(ctx context.Context, a model.CloudAccount, secret, region, 
 			}
 			for _, v := range page.DBInstances {
 				id := base.ToString(v.DBInstanceIdentifier)
-				out = append(out, model.Resource{Provider: "aws", Type: "rds", Region: region, CloudID: id, Name: id, Status: status(base.ToString(v.DBInstanceStatus)), Spec: base.ToString(v.DBInstanceClass), Tags: "{}", Extra: extra(map[string]any{"engine": base.ToString(v.Engine), "engine_version": base.ToString(v.EngineVersion), "storage_gb": base.ToInt32(v.AllocatedStorage), "endpoint": v.Endpoint})})
+				tagValues := map[string]string{}
+				metadata := map[string]any{
+					"engine": base.ToString(v.Engine), "engine_version": base.ToString(v.EngineVersion),
+					"storage_gb": base.ToInt32(v.AllocatedStorage), "storage_type": base.ToString(v.StorageType),
+					"availability_zone": base.ToString(v.AvailabilityZone), "multi_az": base.ToBool(v.MultiAZ),
+					"publicly_accessible": base.ToBool(v.PubliclyAccessible), "created_at": v.InstanceCreateTime,
+				}
+				endpoint := ""
+				if v.Endpoint != nil {
+					endpoint = base.ToString(v.Endpoint.Address)
+					metadata["endpoint"] = endpoint
+					metadata["port"] = base.ToInt32(v.Endpoint.Port)
+				}
+				if v.DBSubnetGroup != nil {
+					metadata["vpc"] = base.ToString(v.DBSubnetGroup.VpcId)
+					metadata["subnet_group"] = base.ToString(v.DBSubnetGroup.DBSubnetGroupName)
+				}
+				securityGroups := make([]string, 0, len(v.VpcSecurityGroups))
+				for _, group := range v.VpcSecurityGroups {
+					securityGroups = append(securityGroups, base.ToString(group.VpcSecurityGroupId))
+				}
+				metadata["security_groups"] = securityGroups
+				if arn := base.ToString(v.DBInstanceArn); arn != "" {
+					metadata["arn"] = arn
+					tagOutput, tagErr := client.ListTagsForResource(ctx, &rds.ListTagsForResourceInput{ResourceName: base.String(arn)})
+					if tagErr != nil {
+						metadata["tag_error"] = tagErr.Error()
+					} else {
+						for _, tag := range tagOutput.TagList {
+							tagValues[base.ToString(tag.Key)] = base.ToString(tag.Value)
+						}
+					}
+				}
+				name := tagValues["Name"]
+				if name == "" {
+					name = id
+				}
+				out = append(out, model.Resource{Provider: "aws", Type: "rds", Region: region, CloudID: id, Name: name, Status: status(base.ToString(v.DBInstanceStatus)), IP: endpoint, Spec: base.ToString(v.DBInstanceClass), Tags: tags(tagValues), Extra: extra(metadata)})
 			}
 		}
 	case "lb":
@@ -210,7 +247,48 @@ func (Provider) List(ctx context.Context, a model.CloudAccount, secret, region, 
 				case "GATEWAY":
 					spec = "GWLB"
 				}
-				out = append(out, model.Resource{Provider: "aws", Type: "lb", Region: region, CloudID: base.ToString(v.LoadBalancerArn), Name: base.ToString(v.LoadBalancerName), Status: status(state), Spec: spec, Tags: "{}", Extra: extra(map[string]any{"dns": base.ToString(v.DNSName), "scheme": v.Scheme, "vpc": base.ToString(v.VpcId)})})
+				subnets := make([]string, 0, len(v.AvailabilityZones))
+				zones := make([]string, 0, len(v.AvailabilityZones))
+				for _, zone := range v.AvailabilityZones {
+					subnets = append(subnets, base.ToString(zone.SubnetId))
+					zones = append(zones, base.ToString(zone.ZoneName))
+				}
+				metadata := map[string]any{
+					"arn": base.ToString(v.LoadBalancerArn), "dns": base.ToString(v.DNSName), "scheme": v.Scheme,
+					"vpc": base.ToString(v.VpcId), "subnets": subnets, "availability_zones": zones,
+					"security_groups": v.SecurityGroups, "ip_address_type": v.IpAddressType, "created_at": v.CreatedTime,
+				}
+				out = append(out, model.Resource{Provider: "aws", Type: "lb", Region: region, CloudID: base.ToString(v.LoadBalancerArn), Name: base.ToString(v.LoadBalancerName), Status: status(state), Spec: spec, Tags: "{}", Extra: extra(metadata)})
+			}
+		}
+		for start := 0; start < len(out); start += 20 {
+			end := min(start+20, len(out))
+			arns := make([]string, 0, end-start)
+			indexByARN := make(map[string]int, end-start)
+			for index := start; index < end; index++ {
+				arns = append(arns, out[index].CloudID)
+				indexByARN[out[index].CloudID] = index
+			}
+			tagOutput, tagErr := client.DescribeTags(ctx, &elasticloadbalancingv2.DescribeTagsInput{ResourceArns: arns})
+			if tagErr != nil {
+				for index := start; index < end; index++ {
+					metadata := map[string]any{}
+					_ = json.Unmarshal([]byte(out[index].Extra), &metadata)
+					metadata["tag_error"] = tagErr.Error()
+					out[index].Extra = extra(metadata)
+				}
+				continue
+			}
+			for _, description := range tagOutput.TagDescriptions {
+				index, ok := indexByARN[base.ToString(description.ResourceArn)]
+				if !ok {
+					continue
+				}
+				tagValues := map[string]string{}
+				for _, tag := range description.Tags {
+					tagValues[base.ToString(tag.Key)] = base.ToString(tag.Value)
+				}
+				out[index].Tags = tags(tagValues)
 			}
 		}
 	case "oss":
@@ -236,10 +314,68 @@ func (Provider) List(ctx context.Context, a model.CloudAccount, secret, region, 
 				metadata["location_error"] = locationErr.Error()
 				bucketRegion = region
 			}
-			out = append(out, model.Resource{Provider: "aws", Type: "oss", Region: bucketRegion, CloudID: name, Name: name, Status: "running", Spec: "S3", Tags: "{}", Extra: extra(metadata)})
+			tagValues := map[string]string{}
+			bucketConfig, bucketConfigErr := cfg(ctx, a, secret, bucketRegion)
+			if bucketConfigErr != nil {
+				metadata["enrichment_error"] = bucketConfigErr.Error()
+			} else {
+				bucketClient := s3.NewFromConfig(bucketConfig)
+				tagOutput, tagErr := bucketClient.GetBucketTagging(ctx, &s3.GetBucketTaggingInput{Bucket: base.String(name)})
+				if tagErr == nil {
+					for _, tag := range tagOutput.TagSet {
+						tagValues[base.ToString(tag.Key)] = base.ToString(tag.Value)
+					}
+				} else if !strings.Contains(strings.ToLower(tagErr.Error()), "nosuchtagset") {
+					metadata["tag_error"] = tagErr.Error()
+				}
+				monitorClient := cloudwatch.NewFromConfig(bucketConfig)
+				storageSeries, storageErr := s3StorageSeries(ctx, monitorClient, cloud.Series{Supported: true}, name, 72*time.Hour)
+				if storageErr == nil && len(storageSeries.Points) > 0 {
+					metadata["capacity_gb"] = storageSeries.Current
+				} else if storageErr != nil {
+					metadata["capacity_error"] = storageErr.Error()
+				} else {
+					metadata["capacity_error"] = "CloudWatch 未返回存储容量"
+				}
+				objectCount, objectErr := s3ObjectCount(ctx, monitorClient, name)
+				if objectErr == nil {
+					metadata["object_count"] = objectCount
+				} else {
+					metadata["object_count_error"] = objectErr.Error()
+				}
+			}
+			out = append(out, model.Resource{Provider: "aws", Type: "oss", Region: bucketRegion, CloudID: name, Name: name, Status: "running", Spec: "S3", Tags: tags(tagValues), Extra: extra(metadata)})
 		}
 	}
 	return out, nil
+}
+
+func s3ObjectCount(ctx context.Context, client *cloudwatch.Client, bucket string) (float64, error) {
+	end := time.Now()
+	start := end.Add(-72 * time.Hour)
+	period := int32(86400)
+	response, err := client.GetMetricStatistics(ctx, &cloudwatch.GetMetricStatisticsInput{
+		Namespace: base.String("AWS/S3"), MetricName: base.String("NumberOfObjects"), StartTime: &start, EndTime: &end,
+		Period: &period, Statistics: []ct.Statistic{ct.StatisticAverage}, Dimensions: []ct.Dimension{
+			{Name: base.String("BucketName"), Value: base.String(bucket)},
+			{Name: base.String("StorageType"), Value: base.String("AllStorageTypes")},
+		},
+	})
+	if err != nil {
+		return 0, err
+	}
+	var latest time.Time
+	var count float64
+	for _, point := range response.Datapoints {
+		if point.Timestamp != nil && point.Timestamp.After(latest) {
+			latest = *point.Timestamp
+			count = base.ToFloat64(point.Average)
+		}
+	}
+	if latest.IsZero() {
+		return 0, fmt.Errorf("CloudWatch 未返回对象数")
+	}
+	return count, nil
 }
 func (Provider) Metrics(ctx context.Context, a model.CloudAccount, secret string, r model.Resource, metric string, span time.Duration) (cloud.Series, error) {
 	series := cloud.Series{ResourceID: r.ID, Metric: metric, Name: r.Name, Provider: r.Provider, Supported: cloud.Supports(r, metric), Points: []cloud.Point{}}

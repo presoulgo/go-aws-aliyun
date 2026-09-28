@@ -12,6 +12,7 @@ type User struct {
 	LockedUntil  *time.Time `json:"locked_until"`
 	LastLoginAt  *time.Time `json:"last_login_at"`
 	LastLoginIP  string     `json:"last_login_ip"`
+	TokenVersion uint       `json:"-"`
 	CreatedAt    time.Time  `json:"created_at"`
 }
 

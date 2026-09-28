@@ -145,6 +145,17 @@ func Seed(db *gorm.DB) error {
 					region = "cn-beijing"
 				}
 				r := model.Resource{AccountID: a.ID, Provider: spec.provider, Type: t, Region: region, CloudID: fmt.Sprintf("%s-%d-%d-%04d", spec.provider, ai, ti, i+1), Name: name, Status: status, IP: fmt.Sprintf("10.%d.%d.%d", ai+1, ti+1, i%254+1), Spec: []string{"ecs.c7.2xlarge", "mysql.rds.large", "ALB", "Standard"}[ti], VCPU: 4, MemoryGB: 8, Tags: fmt.Sprintf(`{"env":"%s","team":"platform"}`, map[bool]string{true: "prod", false: "test"}[i%3 != 0]), Extra: `{"os":"Linux","subnet":"vpc-prod","security_groups":["sg-readonly"]}`, CPU1H: cpu, CPU24H: cpu24, MetricsAt: &now}
+				switch t {
+				case "rds":
+					r.IP = fmt.Sprintf("db-%d-%d.internal", ai+1, i+1)
+					r.Extra = fmt.Sprintf(`{"engine":"MySQL","engine_version":"8.0","storage_gb":%d,"storage_type":"cloud_essd","endpoint":"%s","port":"3306","vpc":"vpc-prod"}`, 100+(i%8)*50, r.IP)
+				case "lb":
+					r.IP = fmt.Sprintf("lb-%d-%d.example.internal", ai+1, i+1)
+					r.Extra = fmt.Sprintf(`{"dns":"%s","scheme":"internet-facing","vpc":"vpc-prod","bandwidth":100}`, r.IP)
+				case "oss":
+					r.IP = ""
+					r.Extra = fmt.Sprintf(`{"location":"%s","storage_class":"Standard","capacity_gb":%.1f,"object_count":%d}`, region, float64(25+i*7), 1200+i*113)
+				}
 				if spec.provider == "aws" && ti == 0 {
 					r.Spec = "m6i.xlarge"
 				}

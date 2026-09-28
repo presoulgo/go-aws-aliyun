@@ -64,7 +64,9 @@ func (s *Server) runRealSync(ctx context.Context, j model.SyncJob, a model.Cloud
 	}
 	regions := splitRegions(a.Regions)
 	if a.AutoRegions {
-		identity, validateErr := p.Validate(ctx, a, plain)
+		validateCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
+		identity, validateErr := p.Validate(validateCtx, a, plain)
+		cancel()
 		if validateErr != nil {
 			s.finishSync(j, "failed", 0, 1, "刷新地域失败: "+validateErr.Error())
 			return
@@ -96,10 +98,12 @@ func (s *Server) runRealSync(ctx context.Context, j model.SyncJob, a model.Cloud
 				results <- syncResult{task: task, err: ctx.Err()}
 				return
 			}
-			resources, listErr := p.List(ctx, a, plain, task.region, task.collector)
+			taskCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+			defer cancel()
+			resources, listErr := p.List(taskCtx, a, plain, task.region, task.collector)
 			result := syncResult{task: task, resources: resources, err: listErr}
 			if listErr == nil && task.resourceType == "vm" {
-				result.metrics = collectCPUMetrics(ctx, p, a, plain, resources, metricLimit)
+				result.metrics = collectCPUMetrics(taskCtx, p, a, plain, resources, metricLimit)
 				applyCPUSnapshots(resources, result.metrics)
 			}
 			results <- result
@@ -120,7 +124,7 @@ func (s *Server) runRealSync(ctx context.Context, j model.SyncJob, a model.Cloud
 		done++
 		s.DB.Model(&j).Update("tasks_done", done)
 		if result.err != nil {
-			if errors.Is(result.err, context.Canceled) || errors.Is(result.err, context.DeadlineExceeded) {
+			if errors.Is(result.err, context.Canceled) && ctx.Err() != nil {
 				continue
 			}
 			if !unsupportedRegion(result.err) {
@@ -314,4 +318,5 @@ func (s *Server) finishSync(j model.SyncJob, status string, done, issueCount int
 	s.DB.Model(&model.Resource{}).Where("account_id = ?", j.AccountID).Count(&count)
 	now := time.Now()
 	s.DB.Model(&j).Updates(map[string]any{"status": status, "tasks_done": done, "error_count": issueCount, "errors": detail, "resource_count": count, "finished_at": now})
+	s.DB.Create(&model.AuditLog{Category: "sync", Action: "finish", Result: status, Actor: j.TriggeredBy, Target: j.AccountName, Detail: detail})
 }

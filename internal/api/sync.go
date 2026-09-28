@@ -43,16 +43,12 @@ func (s *Server) runSync(ctx context.Context, j model.SyncJob, a model.CloudAcco
 	for i := 1; i <= 9; i++ {
 		select {
 		case <-ctx.Done():
-			now := time.Now()
-			s.DB.Model(&j).Updates(map[string]any{"status": "cancelled", "finished_at": now, "errors": "用户取消"})
+			s.finishSync(j, "cancelled", i-1, 0, "用户取消")
 			return
 		case <-time.After(350 * time.Millisecond):
 		}
 		s.DB.Model(&j).Update("tasks_done", i)
 	}
-	var count int64
-	s.DB.Model(&model.Resource{}).Where("account_id = ?", a.ID).Count(&count)
-	now := time.Now()
 	status := "success"
 	errorCount := 0
 	errors := ""
@@ -61,7 +57,7 @@ func (s *Server) runSync(ctx context.Context, j model.SyncJob, a model.CloudAcco
 		errorCount = 1
 		errors = "cn-hongkong ALB 采集超时"
 	}
-	s.DB.Model(&j).Updates(map[string]any{"status": status, "resource_count": count, "error_count": errorCount, "errors": errors, "finished_at": now})
+	s.finishSync(j, status, 9, errorCount, errors)
 }
 func (s *Server) syncAccount(c *gin.Context) {
 	a, ok := s.account(c)
@@ -113,7 +109,7 @@ func (s *Server) syncJobs(c *gin.Context) {
 }
 func (s *Server) syncStatus(c *gin.Context) {
 	var latest model.SyncJob
-	s.DB.Where("status <> ?", "running").Order("id desc").Limit(1).Find(&latest)
+	s.DB.Where("status <> ?", "running").Order("finished_at desc").Limit(1).Find(&latest)
 	var running int64
 	s.DB.Model(&model.SyncJob{}).Where("status = ?", "running").Count(&running)
 	status := "normal"
@@ -130,6 +126,11 @@ func (s *Server) Schedule(ctx context.Context) {
 	defer ticker.Stop()
 	cleanup := time.NewTicker(24 * time.Hour)
 	defer cleanup.Stop()
+	cleanupExpired := func() {
+		s.DB.Where("created_at < ?", time.Now().AddDate(0, 0, -s.Config.AuditDays)).Delete(&model.AuditLog{})
+		s.DB.Where("hour < ?", time.Now().AddDate(0, 0, -8)).Delete(&model.HostCPUHourly{})
+	}
+	cleanupExpired()
 	for {
 		select {
 		case <-ctx.Done():
@@ -141,8 +142,7 @@ func (s *Server) Schedule(ctx context.Context) {
 				s.startSync(a, "schedule")
 			}
 		case <-cleanup.C:
-			s.DB.Where("created_at < ?", time.Now().AddDate(0, 0, -s.Config.AuditDays)).Delete(&model.AuditLog{})
-			s.DB.Where("hour < ?", time.Now().AddDate(0, 0, -8)).Delete(&model.HostCPUHourly{})
+			cleanupExpired()
 		}
 	}
 }
