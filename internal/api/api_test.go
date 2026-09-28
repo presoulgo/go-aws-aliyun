@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -15,6 +16,9 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/presoulgo/go-aws-aliyun/internal/auth"
+	"github.com/presoulgo/go-aws-aliyun/internal/cloud"
+	"github.com/presoulgo/go-aws-aliyun/internal/cloud/demo"
+	"github.com/presoulgo/go-aws-aliyun/internal/secret"
 	"github.com/presoulgo/go-aws-aliyun/internal/service"
 	"github.com/presoulgo/go-aws-aliyun/internal/store"
 )
@@ -23,6 +27,7 @@ type testEnv struct {
 	t       *testing.T
 	handler http.Handler
 	adminPW string
+	syncer  *service.SyncService
 }
 
 func newTestEnv(t *testing.T) *testEnv {
@@ -45,11 +50,21 @@ func newTestEnv(t *testing.T) *testEnv {
 		"index.html":    {Data: []byte("<html>app</html>")},
 		"assets/app.js": {Data: []byte("console.log(1)")},
 	}
-	h, err := New(Deps{Meta: Meta{Name: "云枢"}, Users: users, Audit: audit, Web: web})
+	box, _ := secret.NewBox(bytes.Repeat([]byte{3}, 32))
+	reg := cloud.NewRegistry(demo.NewAWS().WithoutDelay(), demo.NewAliyun().WithoutDelay())
+	accounts := service.NewAccountService(db, box, reg, audit)
+	syncer := service.NewSyncService(db, accounts, audit, service.SyncOptions{Concurrency: 4, TaskTimeout: 5 * time.Second})
+	h, err := New(Deps{
+		Meta: Meta{Name: "云枢"}, Users: users, Audit: audit, Web: web,
+		Accounts: accounts, Sync: syncer,
+		Resources: service.NewResourceService(db, reg, 5, 30),
+		Metrics:   service.NewMetricsService(db, accounts, reg, time.Minute),
+		Dashboard: service.NewDashboardService(db, 5, 30),
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &testEnv{t: t, handler: h, adminPW: pw}
+	return &testEnv{t: t, handler: h, adminPW: pw, syncer: syncer}
 }
 
 func (e *testEnv) do(method, path, token string, body any) (int, map[string]any, string) {
@@ -159,3 +174,86 @@ func TestSPAFallbackAndAPINotFound(t *testing.T) {
 		t.Fatalf("meta: %d %v", code, meta)
 	}
 }
+
+func TestAccountsSyncAndResources(t *testing.T) {
+	env := newTestEnv(t)
+	admin := env.login("admin", env.adminPW)
+	env.do("POST", "/api/v1/users", admin, map[string]string{"username": "viewer1", "password": "viewerPass1", "role": "viewer"})
+	viewer := env.login("viewer1", "viewerPass1")
+
+	body := map[string]any{
+		"name": "阿里云 电商业务", "provider": "aliyun", "access_key_id": "LTAI5tDEMOSHOP000002",
+		"access_key_secret": "super-secret-value", "role_arn": "acs:ram::1507442290112290:role/ops-readonly",
+		"regions": []string{"cn-hangzhou", "cn-shanghai"},
+	}
+	if code, _, _ := env.do("POST", "/api/v1/accounts", viewer, body); code != http.StatusForbidden {
+		t.Fatalf("viewer create account = %d", code)
+	}
+	code, out, raw := env.do("POST", "/api/v1/accounts/test", admin, body)
+	if code != 200 || out["account_uid"] != "1507442290112290" || len(out["regions"].([]any)) == 0 {
+		t.Fatalf("test connection: %d %s", code, raw)
+	}
+	code, out, raw = env.do("POST", "/api/v1/accounts", admin, body)
+	if code != http.StatusCreated || strings.Contains(raw, "super-secret-value") || strings.Contains(raw, "secret_enc") {
+		t.Fatalf("create account: %d %s", code, raw)
+	}
+	id := int(out["id"].(float64))
+	if out["access_key_masked"] != "LTAI••••••••0002" {
+		t.Fatalf("masked key = %v", out["access_key_masked"])
+	}
+	env.syncer.Wait()
+
+	code, _, raw = env.do("GET", "/api/v1/accounts", viewer, nil)
+	if code != 200 || strings.Contains(raw, "super-secret-value") || !strings.Contains(raw, `"last_sync_status":"success"`) {
+		t.Fatalf("viewer list accounts: %d %s", code, raw)
+	}
+	code, out, _ = env.do("GET", "/api/v1/resources?type=vm&sort=cpu_1h:desc&page_size=5", viewer, nil)
+	if code != 200 || out["total"].(float64) == 0 {
+		t.Fatalf("resources: %d %v", code, out)
+	}
+	first := out["items"].([]any)[0].(map[string]any)
+	if first["name"] != "prod-api-07" || first["account_name"] != "阿里云 电商业务" {
+		t.Fatalf("top resource: %v", first)
+	}
+	rid := int(first["id"].(float64))
+	code, out, raw = env.do("GET", "/api/v1/resources/"+itoa(rid)+"/metrics?range=1h&keys=cpu_util,net_in", viewer, nil)
+	if code != 200 || len(out["series"].([]any)) != 2 {
+		t.Fatalf("metrics: %d %s", code, raw)
+	}
+	if code, _, raw = env.do("GET", "/api/v1/dashboard/summary?provider=aliyun", viewer, nil); code != 200 || !strings.Contains(raw, "prod-api-07") {
+		t.Fatalf("dashboard: %d %s", code, raw)
+	}
+	if code, out, _ = env.do("GET", "/api/v1/sync/status", viewer, nil); code != 200 || out["state"] != "ok" {
+		t.Fatalf("sync status: %d %v", code, out)
+	}
+
+	// Viewers cannot trigger syncs or change accounts.
+	for _, tc := range []struct{ method, path string }{
+		{"POST", "/api/v1/accounts/" + itoa(id) + "/sync"},
+		{"POST", "/api/v1/sync/all"},
+		{"PATCH", "/api/v1/accounts/" + itoa(id)},
+		{"DELETE", "/api/v1/accounts/" + itoa(id)},
+	} {
+		if code, _, _ := env.do(tc.method, tc.path, viewer, map[string]any{"enabled": false}); code != http.StatusForbidden {
+			t.Errorf("viewer %s %s = %d", tc.method, tc.path, code)
+		}
+	}
+	if code, _, raw = env.do("PATCH", "/api/v1/accounts/"+itoa(id), admin, map[string]any{"enabled": false}); code != 200 || !strings.Contains(raw, `"enabled":false`) {
+		t.Fatalf("disable account: %d %s", code, raw)
+	}
+	if code, _, _ = env.do("POST", "/api/v1/accounts/"+itoa(id)+"/sync", admin, nil); code != http.StatusConflict {
+		t.Fatalf("syncing a disabled account = %d", code)
+	}
+	if code, _, _ = env.do("DELETE", "/api/v1/accounts/"+itoa(id), admin, nil); code != http.StatusNoContent {
+		t.Fatalf("delete account = %d", code)
+	}
+	if _, out, _ = env.do("GET", "/api/v1/resources", admin, nil); out["total"].(float64) != 0 {
+		t.Fatalf("resources must be deleted with the account: %v", out["total"])
+	}
+	_, out, raw = env.do("GET", "/api/v1/audit-logs?category=account", admin, nil)
+	if out["total"].(float64) < 3 || !strings.Contains(raw, "account_delete") {
+		t.Fatalf("account audit: %s", raw)
+	}
+}
+
+func itoa(n int) string { return strconv.Itoa(n) }

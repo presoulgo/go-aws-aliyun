@@ -23,19 +23,32 @@ type Deps struct {
 	TrustedProxies []string
 	Users          *service.UserService
 	Audit          *service.AuditService
+	Accounts       *service.AccountService
+	Sync           *service.SyncService
+	Resources      *service.ResourceService
+	Metrics        *service.MetricsService
+	Dashboard      *service.DashboardService
 	Web            fs.FS
 }
 
 // Server wires HTTP handlers to services.
 type Server struct {
-	meta  Meta
-	users *service.UserService
-	audit *service.AuditService
+	meta      Meta
+	users     *service.UserService
+	audit     *service.AuditService
+	accounts  *service.AccountService
+	syncer    *service.SyncService
+	resources *service.ResourceService
+	metrics   *service.MetricsService
+	dashboard *service.DashboardService
 }
 
 // New builds the HTTP handler.
 func New(d Deps) (http.Handler, error) {
-	s := &Server{meta: d.Meta, users: d.Users, audit: d.Audit}
+	s := &Server{
+		meta: d.Meta, users: d.Users, audit: d.Audit, accounts: d.Accounts, syncer: d.Sync,
+		resources: d.Resources, metrics: d.Metrics, dashboard: d.Dashboard,
+	}
 
 	r := gin.New()
 	if err := r.SetTrustedProxies(d.TrustedProxies); err != nil {
@@ -59,6 +72,38 @@ func New(d Deps) (http.Handler, error) {
 	admin.DELETE("/users/:id", s.deleteUser)
 	admin.POST("/users/:id/reset-password", s.resetPassword)
 	admin.GET("/audit-logs", s.listAuditLogs)
+
+	if s.accounts != nil {
+		authed.GET("/accounts", s.listAccounts)
+		authed.GET("/accounts/:id", s.getAccount)
+		admin.POST("/accounts", s.createAccount)
+		admin.POST("/accounts/test", s.testAccount)
+		admin.PUT("/accounts/:id", s.updateAccount)
+		admin.PATCH("/accounts/:id", s.patchAccount)
+		admin.DELETE("/accounts/:id", s.deleteAccount)
+		admin.POST("/accounts/:id/test", s.testExistingAccount)
+	}
+	if s.syncer != nil {
+		admin.POST("/accounts/:id/sync", s.syncAccount)
+		admin.POST("/sync/all", s.syncAll)
+		admin.POST("/sync-jobs/:id/cancel", s.cancelJob)
+		authed.GET("/sync-jobs", s.listJobs)
+		authed.GET("/sync-jobs/:id", s.getJob)
+		authed.GET("/sync/status", s.syncStatus)
+	}
+	if s.resources != nil {
+		authed.GET("/resources", s.listResources)
+		authed.GET("/resources/filters", s.resourceFilters)
+		authed.GET("/resources/:id", s.getResource)
+	}
+	if s.metrics != nil {
+		authed.GET("/metrics/catalog", s.metricCatalog)
+		authed.GET("/resources/:id/metrics", s.resourceMetrics)
+		authed.POST("/metrics/query", s.queryMetrics)
+	}
+	if s.dashboard != nil {
+		authed.GET("/dashboard/summary", s.dashboardSummary)
+	}
 
 	r.NoRoute(spaHandler(d.Web))
 	return r, nil
