@@ -44,6 +44,24 @@ export const router = createRouter({
           meta: { title: '监控中心' },
         },
         {
+          path: 'optimize',
+          name: 'optimize',
+          component: () => import('@/views/OptimizeView.vue'),
+          meta: { title: '成本优化' },
+        },
+        {
+          path: 'changes',
+          name: 'changes',
+          component: () => import('@/views/ChangesView.vue'),
+          meta: { title: '变更记录' },
+        },
+        {
+          path: 'alerts',
+          name: 'alerts',
+          component: () => import('@/views/AlertsView.vue'),
+          meta: { title: '告警中心' },
+        },
+        {
           path: 'accounts',
           name: 'accounts',
           component: () => import('@/views/AccountsView.vue'),

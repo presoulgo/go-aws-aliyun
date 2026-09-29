@@ -3,7 +3,9 @@
 export type Provider = 'aws' | 'aliyun'
 export type ProviderFilter = Provider | 'all'
 export type Role = 'admin' | 'viewer'
-export type ResourceType = 'vm' | 'rds' | 'lb' | 'bucket'
+export type CoreResourceType = 'vm' | 'rds' | 'lb' | 'bucket'
+/** disk / eip 只采集闲置项（未挂载云盘、未绑定弹性 IP），用于成本优化。 */
+export type ResourceType = CoreResourceType | 'disk' | 'eip'
 export type ResourceStatus =
   | 'running'
   | 'stopped'
@@ -13,6 +15,7 @@ export type ResourceStatus =
   | 'changing'
   | 'terminating'
   | 'failed'
+  | 'available'
   | 'unknown'
 export type JobStatus = 'running' | 'success' | 'partial' | 'failed' | 'cancelled' | 'interrupted'
 export type RangeKey = '1h' | '6h' | '24h' | '7d'
@@ -29,6 +32,7 @@ export interface Meta {
   version: string
   sync_interval_minutes: number
   audit_retention_days: number
+  change_retention_days: number
 }
 
 export interface User {
@@ -58,7 +62,7 @@ export interface AuditLog {
   id: number
   user_id: number
   username: string
-  category: 'login' | 'account' | 'sync' | 'user'
+  category: 'login' | 'account' | 'sync' | 'user' | 'alert'
   action: string
   result: 'success' | 'failed'
   target: string
@@ -277,6 +281,8 @@ export interface DashboardSummary {
   expiring: number
   expiring_days: number
   next_expire_in_days: number | null
+  waste_disks: number
+  waste_eips: number
   distribution: { type: ResourceType; aws: number; aliyun: number }[]
   cpu_trend: { t: number; aws: number | null; aliyun: number | null }[]
   top_cpu: { id: number; name: string; provider: Provider; region: string; account_name: string; cpu: number }[]
@@ -305,4 +311,93 @@ export interface DashboardSummary {
     tasks_done: number
     first_error?: TaskError
   }[]
+}
+
+export type ChangeAction = 'created' | 'updated' | 'deleted'
+
+export interface FieldChange {
+  field: string
+  old: string
+  new: string
+}
+
+export interface ResourceChange {
+  id: number
+  account_id: number
+  account_name: string
+  provider: Provider
+  type: ResourceType
+  region: string
+  resource_id: string
+  name: string
+  action: ChangeAction
+  changes: FieldChange[]
+  job_id: number
+  created_at: string
+}
+
+export interface ChangeQuery {
+  provider?: ProviderFilter
+  account_id?: number
+  type?: ResourceType
+  action?: ChangeAction
+  region?: string
+  resource_id?: string
+  range?: 'today' | '7d' | '30d' | 'all'
+  q?: string
+  page?: number
+  page_size?: number
+}
+
+export type AlertRuleKey = 'cpu_high' | 'idle_host' | 'expiring' | 'waste' | 'sync_failed'
+export type AlertStatus = 'firing' | 'resolved'
+export type ChannelType = 'feishu' | 'webhook'
+
+export interface AlertRule {
+  key: AlertRuleKey
+  name: string
+  description: string
+  enabled: boolean
+  params: Record<string, number>
+  channel_ids: number[]
+  firing: number
+}
+
+export interface AlertEvent {
+  id: number
+  rule: AlertRuleKey
+  rule_name: string
+  account_id: number
+  account_name: string
+  provider: Provider
+  status: AlertStatus
+  target_key: string
+  resource_type: ResourceType | ''
+  region: string
+  resource_id: string
+  name: string
+  detail: string
+  fired_at: string
+  resolved_at: string | null
+  notify_error: string
+}
+
+export interface NotifyChannel {
+  id: number
+  name: string
+  type: ChannelType
+  url_masked: string
+  has_secret: boolean
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ChannelInput {
+  name: string
+  type: ChannelType
+  url?: string
+  secret?: string
+  clear_secret?: boolean
+  enabled?: boolean
 }

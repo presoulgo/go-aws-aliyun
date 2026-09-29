@@ -218,7 +218,7 @@ func TestDemoEndToEnd(t *testing.T) {
 		if a.LastSyncStatus == model.JobPartial {
 			partial++
 			if a.Name != "阿里云 主账号" {
-				t.Fatalf("only the main Alibaba Cloud account simulates a failure, got %s", a.Name)
+				t.Fatalf("only the main Alibaba Cloud account simulates a failure, got %s: %s", a.Name, a.LastSyncError)
 			}
 		} else if a.LastSyncStatus != model.JobSuccess {
 			t.Fatalf("%s: %s %s", a.Name, a.LastSyncStatus, a.LastSyncError)
@@ -228,8 +228,9 @@ func TestDemoEndToEnd(t *testing.T) {
 		t.Fatalf("expected one partial account, got %d", partial)
 	}
 
+	// 770–784 inventory items plus 24 unattached disks and 10 unbound EIPs.
 	_, total, _ := env.res.List(ResourceFilter{})
-	if total < 770 || total > 784 {
+	if total < 804 || total > 818 {
 		t.Fatalf("total resources = %d", total)
 	}
 	top, _, _ := env.res.List(ResourceFilter{Type: model.TypeVM, Sort: "cpu_1h:desc", Page: Page{PageSize: 1}})

@@ -52,6 +52,8 @@ func (p *Provider) ResourceTypes() []cloud.TypeSpec {
 		{Type: model.TypeRDS},
 		{Type: model.TypeLB},
 		{Type: model.TypeBucket, Global: true},
+		{Type: model.TypeDisk},
+		{Type: model.TypeEIP},
 	}
 }
 
@@ -275,6 +277,18 @@ func (p *Provider) Collect(ctx context.Context, cred cloud.Credential, typ, regi
 			return nil, err
 		}
 		return collectOSS(ctx, lister, func(r string) (bucketStater, error) { return p.oss(cred, r) })
+	case model.TypeDisk:
+		c, err := p.ecs(cred, region)
+		if err != nil {
+			return nil, err
+		}
+		return collectDisks(ctx, c, region)
+	case model.TypeEIP:
+		c, err := p.ecs(cred, region)
+		if err != nil {
+			return nil, err
+		}
+		return collectEIPs(ctx, c, region)
 	}
 	return nil, nil
 }

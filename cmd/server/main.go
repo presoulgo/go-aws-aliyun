@@ -122,12 +122,19 @@ func run() error {
 	resources := service.NewResourceService(db, registry, cfg.Insight.IdleCPUThreshold, cfg.Insight.ExpiringDays)
 	metrics := service.NewMetricsService(db, accounts, registry, cfg.Metrics.CacheTTL.D())
 	dashboard := service.NewDashboardService(db, cfg.Insight.IdleCPUThreshold, cfg.Insight.ExpiringDays)
+	changes := service.NewChangeService(db)
+	alerts := service.NewAlertService(db, box, audit, cfg.App.ExternalURL)
+	if err := alerts.EnsureRules(); err != nil {
+		return err
+	}
+	syncer.OnFinish = alerts.OnSyncFinished
 
 	handler, err := api.New(api.Deps{
 		Meta: api.Meta{
 			Name: cfg.App.Name, Demo: cfg.Demo, Version: version,
 			SyncIntervalMinutes: int(cfg.Sync.Interval.D().Minutes()),
 			AuditRetentionDays:  int(cfg.Audit.Retention.D().Hours() / 24),
+			ChangeRetentionDays: int(cfg.Changes.Retention.D().Hours() / 24),
 		},
 		TrustedProxies: cfg.Server.TrustedProxies,
 		Users:          users,
@@ -137,6 +144,8 @@ func run() error {
 		Resources:      resources,
 		Metrics:        metrics,
 		Dashboard:      dashboard,
+		Changes:        changes,
+		Alerts:         alerts,
 		Web:            web.Dist(),
 	})
 	if err != nil {
@@ -158,11 +167,14 @@ func run() error {
 		}
 	}
 	sched := &scheduler.Scheduler{
-		Sync:        syncer,
-		Audit:       audit,
-		Interval:    cfg.Sync.Interval.D(),
-		StartDelay:  startDelay,
-		AuditRetain: cfg.Audit.Retention.D(),
+		Sync:         syncer,
+		Audit:        audit,
+		Changes:      changes,
+		Alerts:       alerts,
+		Interval:     cfg.Sync.Interval.D(),
+		StartDelay:   startDelay,
+		AuditRetain:  cfg.Audit.Retention.D(),
+		ChangeRetain: cfg.Changes.Retention.D(),
 	}
 	go sched.Run(ctx)
 

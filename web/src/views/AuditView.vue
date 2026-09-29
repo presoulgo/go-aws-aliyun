@@ -9,7 +9,7 @@ import { useAppStore } from '@/stores/app'
 import { dayjs } from '@/utils/format'
 
 type Range = 'today' | '7d' | '30d'
-type Category = 'all' | 'login' | 'account' | 'sync' | 'user'
+type Category = 'all' | 'login' | 'account' | 'sync' | 'user' | 'alert'
 const PAGE_SIZE = 20
 
 const route = useRoute()
@@ -27,6 +27,7 @@ const categories: { value: Category; label: string }[] = [
   { value: 'account', label: '云账号' },
   { value: 'sync', label: '同步' },
   { value: 'user', label: '用户' },
+  { value: 'alert', label: '告警' },
 ]
 
 function q(key: string) {
@@ -113,6 +114,10 @@ const actionLabel: Record<string, string> = {
   user_disable: '禁用用户',
   user_reset_password: '重置密码',
   password_change: '修改密码',
+  alert_rule_update: '修改告警规则',
+  channel_create: '新增通知渠道',
+  channel_update: '修改通知渠道',
+  channel_delete: '删除通知渠道',
 }
 
 function tone(l: AuditLog): string {
@@ -133,7 +138,7 @@ const emptyText = computed(() => (keyword.value.trim() ? '没有匹配的记录'
 </script>
 
 <template>
-  <PageHeader title="审计日志" subtitle="记录登录、云账号变更、手动同步和用户管理操作 · 只增不改" />
+  <PageHeader title="审计日志" subtitle="记录登录、云账号变更、手动同步、用户管理和告警配置操作 · 只增不改" />
 
   <section class="ys-card panel">
     <div class="filters">
@@ -322,6 +327,10 @@ const emptyText = computed(() => (keyword.value.trim() ? '没有匹配的记录'
 .act.user {
   background: #f3eafb;
   color: #6b2fa0;
+}
+.act.alert {
+  background: var(--ys-warn-bg);
+  color: var(--ys-warn-fg);
 }
 .act.warn {
   background: var(--ys-warn-bg);

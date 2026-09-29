@@ -98,7 +98,7 @@ func (s *AuditService) List(f AuditFilter) ([]model.AuditLog, int64, error) {
 	}
 	switch f.Category {
 	case "", "all":
-	case model.AuditLogin, model.AuditAccount, model.AuditSync, model.AuditUser:
+	case model.AuditLogin, model.AuditAccount, model.AuditSync, model.AuditUser, model.AuditAlert:
 		q = q.Where("category = ?", f.Category)
 	default:
 		return nil, 0, apperr.Invalid("无效的操作类型")

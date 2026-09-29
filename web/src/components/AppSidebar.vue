@@ -16,6 +16,9 @@ const main: NavItem[] = [
   { to: '/dashboard', label: '概览', icon: 'dashboard' },
   { to: '/resources', label: '资源中心', icon: 'resources' },
   { to: '/monitor', label: '监控中心', icon: 'monitor' },
+  { to: '/optimize', label: '成本优化', icon: 'saving' },
+  { to: '/changes', label: '变更记录', icon: 'history' },
+  { to: '/alerts', label: '告警中心', icon: 'bell' },
   { to: '/accounts', label: '云账号', icon: 'key' },
 ]
 const system: NavItem[] = [

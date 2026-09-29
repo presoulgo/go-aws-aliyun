@@ -86,6 +86,8 @@ docker logs yunshu 2>&1 | grep password   # 查看随机生成的 admin 初始�
         "ec2:DescribeRegions",
         "ec2:DescribeInstances",
         "ec2:DescribeInstanceTypes",
+        "ec2:DescribeVolumes",
+        "ec2:DescribeAddresses",
         "rds:DescribeDBInstances",
         "elasticloadbalancing:DescribeLoadBalancers",
         "elasticloadbalancing:DescribeTags",
@@ -118,6 +120,8 @@ docker logs yunshu 2>&1 | grep password   # 查看随机生成的 admin 初始�
       "Action": [
         "ecs:DescribeRegions",
         "ecs:DescribeInstances",
+        "ecs:DescribeDisks",
+        "ecs:DescribeEipAddresses",
         "rds:DescribeDBInstances",
         "rds:DescribeDBInstanceAttribute",
         "slb:DescribeLoadBalancers",

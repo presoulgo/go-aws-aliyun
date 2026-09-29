@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -42,6 +43,9 @@ type SyncService struct {
 	running map[uint]*runningJob // by account id
 	wg      sync.WaitGroup
 	baseCtx context.Context
+
+	// OnFinish, when set, runs after a job ended, outside any lock.
+	OnFinish func(accountID uint, status string)
 }
 
 type runningJob struct {
@@ -158,6 +162,9 @@ func (s *SyncService) start(acc *model.CloudAccount, actor Actor, manual bool) (
 			cancel()
 		}()
 		s.run(ctx, &accCopy, &jobCopy)
+		if s.OnFinish != nil {
+			s.OnFinish(accCopy.ID, jobCopy.Status)
+		}
 	}()
 	return &job, true, nil
 }
@@ -283,12 +290,12 @@ func (s *SyncService) run(ctx context.Context, acc *model.CloudAccount, job *mod
 			}
 			skipped := err != nil && errors.Is(err, cloud.ErrRegionUnsupported)
 			if !skipped && (err == nil || len(res) > 0) {
-				if perr := s.persist(acc, t, res, start, err == nil); perr != nil {
+				if perr := s.persist(acc, job.ID, t, res, start, err == nil); perr != nil {
 					err = errors.Join(err, perr)
 				}
 			} else if skipped {
 				// Nothing lives in a region where the product does not exist.
-				_ = s.persist(acc, t, nil, start, true)
+				_ = s.persist(acc, job.ID, t, nil, start, true)
 			}
 			mu.Lock()
 			for _, r := range res {
@@ -342,17 +349,75 @@ func statusFor(ctx context.Context, fallback string) string {
 }
 
 // persist upserts collected resources and, when the task fully succeeded,
-// deletes resources of that type and region that disappeared.
-func (s *SyncService) persist(acc *model.CloudAccount, t task, res []cloud.Resource, start time.Time, sweep bool) error {
+// deletes resources of that type and region that disappeared. Differences to
+// the stored rows are recorded as resource changes.
+func (s *SyncService) persist(acc *model.CloudAccount, jobID uint, t task, res []cloud.Resource, start time.Time, sweep bool) error {
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 	now := s.now().UTC()
-	return s.db.Transaction(func(tx *gorm.DB) error {
-		if len(res) > 0 {
-			rows := make([]model.Resource, 0, len(res))
-			for _, r := range res {
-				rows = append(rows, toModel(acc, r, now))
+	scope := func(db *gorm.DB) *gorm.DB {
+		q := db.Where("account_id = ? AND type = ?", acc.ID, t.typ)
+		if !t.global {
+			q = q.Where("region = ?", t.region)
+		}
+		return q
+	}
+	change := func(r model.Resource, action string, fields model.FieldChanges) model.ResourceChange {
+		if fields == nil {
+			fields = model.FieldChanges{}
+		}
+		return model.ResourceChange{
+			AccountID: acc.ID, Provider: acc.Provider, Type: r.Type, Region: r.Region, ResourceID: r.ResourceID,
+			Name: r.Name, Action: action, Changes: fields, JobID: jobID, CreatedAt: now,
+		}
+	}
+
+	// Read the stored rows before the transaction: a SQLite transaction that
+	// reads first and writes later fails with SQLITE_BUSY_SNAPSHOT when another
+	// connection writes in between. writeMu keeps other sync tasks off these rows.
+	var old []model.Resource
+	if err := scope(s.db).Find(&old).Error; err != nil {
+		return err
+	}
+	byKey := make(map[string]*model.Resource, len(old))
+	for i := range old {
+		byKey[old[i].Region+"\x00"+old[i].ResourceID] = &old[i]
+	}
+	// The first sync of an account would report every resource as created.
+	firstSync := acc.LastSyncAt == nil
+	var changes []model.ResourceChange
+	rows := make([]model.Resource, 0, len(res))
+	for _, r := range res {
+		row := toModel(acc, r, now)
+		rows = append(rows, row)
+		key := row.Region + "\x00" + row.ResourceID
+		prev, ok := byKey[key]
+		switch {
+		case !ok && !firstSync:
+			changes = append(changes, change(row, model.ChangeCreated, nil))
+		case ok:
+			if d := diffResource(*prev, row); len(d) > 0 {
+				changes = append(changes, change(row, model.ChangeUpdated, d))
 			}
+			delete(byKey, key)
+		}
+	}
+	// Rows not collected this time are swept only when the task fully succeeded.
+	gone := 0
+	if sweep {
+		for _, r := range old {
+			if _, left := byKey[r.Region+"\x00"+r.ResourceID]; left && r.SyncedAt.Before(start) {
+				changes = append(changes, change(r, model.ChangeDeleted, nil))
+				gone++
+			}
+		}
+	}
+	if len(rows) == 0 && gone == 0 {
+		return nil
+	}
+
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		if len(rows) > 0 {
 			err := tx.Clauses(clause.OnConflict{
 				Columns: []clause.Column{{Name: "account_id"}, {Name: "type"}, {Name: "region"}, {Name: "resource_id"}},
 				DoUpdates: clause.AssignmentColumns([]string{
@@ -364,15 +429,62 @@ func (s *SyncService) persist(acc *model.CloudAccount, t task, res []cloud.Resou
 				return err
 			}
 		}
-		if !sweep {
+		if gone > 0 {
+			if err := scope(tx).Where("synced_at < ?", start).Delete(&model.Resource{}).Error; err != nil {
+				return err
+			}
+		}
+		if len(changes) == 0 {
 			return nil
 		}
-		q := tx.Where("account_id = ? AND type = ? AND synced_at < ?", acc.ID, t.typ, start)
-		if !t.global {
-			q = q.Where("region = ?", t.region)
-		}
-		return q.Delete(&model.Resource{}).Error
+		return tx.CreateInBatches(changes, 100).Error
 	})
+}
+
+// diffResource compares the fields users care about between the stored row
+// and a freshly collected one. Extra is skipped: it holds values such as
+// bucket sizes that change on every sync.
+func diffResource(old, cur model.Resource) model.FieldChanges {
+	var out model.FieldChanges
+	add := func(field, a, b string) {
+		if a != b {
+			out = append(out, model.FieldChange{Field: field, Old: a, New: b})
+		}
+	}
+	add("name", old.Name, cur.Name)
+	add("status", old.Status, cur.Status)
+	add("spec", old.Spec, cur.Spec)
+	add("private_ip", old.PrivateIP, cur.PrivateIP)
+	add("public_ip", old.PublicIP, cur.PublicIP)
+	add("charge_type", old.ChargeType, cur.ChargeType)
+	add("expire_at", timeText(old.ExpireAt), timeText(cur.ExpireAt))
+	keys := make([]string, 0, len(old.Tags)+len(cur.Tags))
+	for k := range old.Tags {
+		keys = append(keys, k)
+	}
+	for k := range cur.Tags {
+		if _, ok := old.Tags[k]; !ok {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		a, inOld := old.Tags[k]
+		b, inCur := cur.Tags[k]
+		if inOld != inCur || a != b {
+			out = append(out, model.FieldChange{Field: "tags." + k, Old: a, New: b})
+		}
+	}
+	return out
+}
+
+// timeText formats a timestamp at second precision so values read back from
+// the database compare equal to freshly collected ones.
+func timeText(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
 }
 
 func toModel(acc *model.CloudAccount, r cloud.Resource, now time.Time) model.Resource {
@@ -476,6 +588,7 @@ func (s *SyncService) finish(acc *model.CloudAccount, job *model.SyncJob, status
 		errs = model.TaskErrors{}
 	}
 	now := s.now().UTC()
+	job.Status = status
 	s.writeMu.Lock()
 	defer s.writeMu.Unlock()
 	err := s.db.Model(&model.SyncJob{}).Where("id = ?", job.ID).Updates(map[string]any{

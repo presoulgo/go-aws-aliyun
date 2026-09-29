@@ -68,6 +68,8 @@ func (p *Provider) ResourceTypes() []cloud.TypeSpec {
 		{Type: model.TypeRDS},
 		{Type: model.TypeLB},
 		{Type: model.TypeBucket, Global: true},
+		{Type: model.TypeDisk},
+		{Type: model.TypeEIP},
 	}
 }
 
@@ -236,10 +238,10 @@ func (p *Provider) profileFor(cred cloud.Credential) profile {
 			enabled, res = awsChinaRegions, awsChinaRegions
 		}
 		return profile{provider: p.name, uid: fmt.Sprintf("%012d", h%1_000_000_000_000), env: "stg", enabled: enabled, resources: res,
-			counts: counts{vm: 12, rds: 2, lb: 2, bucket: 4}}
+			counts: counts{vm: 12, rds: 2, lb: 2, bucket: 4, disk: 1, eip: 1}}
 	}
 	return profile{provider: p.name, uid: fmt.Sprintf("%016d", h%10_000_000_000_000_000), env: "stg", enabled: aliyunRegions,
-		resources: []string{"cn-hangzhou", "cn-shenzhen"}, counts: counts{vm: 12, rds: 2, lb: 2, bucket: 4}, expiring: 1}
+		resources: []string{"cn-hangzhou", "cn-shenzhen"}, counts: counts{vm: 12, rds: 2, lb: 2, bucket: 4, disk: 1, eip: 1}, expiring: 1}
 }
 
 func (p *Provider) data(cred cloud.Credential) *accountData {

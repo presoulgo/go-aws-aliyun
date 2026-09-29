@@ -155,3 +155,54 @@ func (m *IntMap) Scan(value any) error {
 }
 
 func (IntMap) GormDBDataType(db *gorm.DB, _ *schema.Field) string { return jsonDBType(db) }
+
+// FieldChange is one changed field of a resource between two syncs.
+type FieldChange struct {
+	Field string `json:"field"`
+	Old   string `json:"old"`
+	New   string `json:"new"`
+}
+
+// FieldChanges stores []FieldChange as JSON.
+type FieldChanges []FieldChange
+
+func (l FieldChanges) Value() (driver.Value, error) {
+	if l == nil {
+		return "[]", nil
+	}
+	b, err := json.Marshal([]FieldChange(l))
+	return string(b), err
+}
+
+func (l *FieldChanges) Scan(value any) error {
+	out := []FieldChange{}
+	if err := scanJSON(value, &out); err != nil {
+		return err
+	}
+	*l = out
+	return nil
+}
+
+func (FieldChanges) GormDBDataType(db *gorm.DB, _ *schema.Field) string { return jsonDBType(db) }
+
+// UintList stores []uint as JSON (ids).
+type UintList []uint
+
+func (l UintList) Value() (driver.Value, error) {
+	if l == nil {
+		return "[]", nil
+	}
+	b, err := json.Marshal([]uint(l))
+	return string(b), err
+}
+
+func (l *UintList) Scan(value any) error {
+	out := []uint{}
+	if err := scanJSON(value, &out); err != nil {
+		return err
+	}
+	*l = out
+	return nil
+}
+
+func (UintList) GormDBDataType(db *gorm.DB, _ *schema.Field) string { return jsonDBType(db) }

@@ -13,9 +13,12 @@ import (
 type Scheduler struct {
 	Sync         *service.SyncService
 	Audit        *service.AuditService
+	Changes      *service.ChangeService
+	Alerts       *service.AlertService
 	Interval     time.Duration
 	StartDelay   time.Duration
 	AuditRetain  time.Duration
+	ChangeRetain time.Duration
 	CPURetention time.Duration
 }
 
@@ -62,6 +65,19 @@ func (s *Scheduler) cleanup() {
 			slog.Error("清理审计日志失败", "err", err)
 		} else if n > 0 {
 			slog.Info("已清理过期审计日志", "count", n)
+		}
+	}
+	if s.Changes != nil && s.ChangeRetain > 0 {
+		if n, err := s.Changes.Cleanup(now.Add(-s.ChangeRetain)); err != nil {
+			slog.Error("清理资源变更记录失败", "err", err)
+		} else if n > 0 {
+			slog.Info("已清理过期资源变更记录", "count", n)
+		}
+		// Resolved alerts share the change retention.
+		if s.Alerts != nil {
+			if _, err := s.Alerts.Cleanup(now.Add(-s.ChangeRetain)); err != nil {
+				slog.Error("清理已恢复告警失败", "err", err)
+			}
 		}
 	}
 	if err := s.Sync.CleanupCPUHistory(now.Add(-s.CPURetention)); err != nil {

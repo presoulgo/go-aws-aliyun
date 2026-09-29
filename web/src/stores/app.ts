@@ -6,7 +6,7 @@ const IDLE_POLL = 60_000
 const BUSY_POLL = 5_000
 
 export const useAppStore = defineStore('app', () => {
-  const meta = ref<Meta>({ name: '云枢', demo: false, version: '', sync_interval_minutes: 30, audit_retention_days: 180 })
+  const meta = ref<Meta>({ name: '云枢', demo: false, version: '', sync_interval_minutes: 30, audit_retention_days: 180, change_retention_days: 90 })
   const syncStatus = ref<SyncStatus | null>(null)
   /** 有同步任务开始或结束时加一，页面据此重新拉取数据。 */
   const syncTick = ref(0)

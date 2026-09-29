@@ -18,6 +18,7 @@ type Meta struct {
 	// SyncIntervalMinutes and AuditRetentionDays are shown in page hints.
 	SyncIntervalMinutes int `json:"sync_interval_minutes"`
 	AuditRetentionDays  int `json:"audit_retention_days"`
+	ChangeRetentionDays int `json:"change_retention_days"`
 }
 
 // Deps are the services the API depends on.
@@ -31,6 +32,8 @@ type Deps struct {
 	Resources      *service.ResourceService
 	Metrics        *service.MetricsService
 	Dashboard      *service.DashboardService
+	Changes        *service.ChangeService
+	Alerts         *service.AlertService
 	Web            fs.FS
 }
 
@@ -44,13 +47,16 @@ type Server struct {
 	resources *service.ResourceService
 	metrics   *service.MetricsService
 	dashboard *service.DashboardService
+	changes   *service.ChangeService
+	alerts    *service.AlertService
 }
 
 // New builds the HTTP handler.
 func New(d Deps) (http.Handler, error) {
 	s := &Server{
 		meta: d.Meta, users: d.Users, audit: d.Audit, accounts: d.Accounts, syncer: d.Sync,
-		resources: d.Resources, metrics: d.Metrics, dashboard: d.Dashboard,
+		resources: d.Resources, metrics: d.Metrics, dashboard: d.Dashboard, changes: d.Changes,
+		alerts: d.Alerts,
 	}
 
 	r := gin.New()
@@ -106,6 +112,19 @@ func New(d Deps) (http.Handler, error) {
 	}
 	if s.dashboard != nil {
 		authed.GET("/dashboard/summary", s.dashboardSummary)
+	}
+	if s.changes != nil {
+		authed.GET("/changes", s.listChanges)
+	}
+	if s.alerts != nil {
+		authed.GET("/alert-rules", s.listAlertRules)
+		admin.PUT("/alert-rules/:key", s.updateAlertRule)
+		authed.GET("/alert-events", s.listAlertEvents)
+		authed.GET("/notify-channels", s.listChannels)
+		admin.POST("/notify-channels", s.createChannel)
+		admin.PUT("/notify-channels/:id", s.updateChannel)
+		admin.DELETE("/notify-channels/:id", s.deleteChannel)
+		admin.POST("/notify-channels/:id/test", s.testChannel)
 	}
 
 	r.NoRoute(spaHandler(d.Web))

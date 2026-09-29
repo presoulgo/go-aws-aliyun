@@ -25,6 +25,7 @@ type Config struct {
 	Metrics  MetricsConfig  `yaml:"metrics"`
 	Insight  InsightConfig  `yaml:"insight"`
 	Audit    AuditConfig    `yaml:"audit"`
+	Changes  ChangesConfig  `yaml:"changes"`
 	Log      LogConfig      `yaml:"log"`
 	// Demo replaces the real cloud providers with generated data.
 	Demo bool `yaml:"demo"`
@@ -32,6 +33,9 @@ type Config struct {
 
 type AppConfig struct {
 	Name string `yaml:"name"`
+	// ExternalURL is the address users open the platform at; alert messages
+	// link to it when set.
+	ExternalURL string `yaml:"external_url"`
 }
 
 type ServerConfig struct {
@@ -79,6 +83,10 @@ type AuditConfig struct {
 	Retention Duration `yaml:"retention"`
 }
 
+type ChangesConfig struct {
+	Retention Duration `yaml:"retention"`
+}
+
 type LogConfig struct {
 	Level  string `yaml:"level"`
 	Format string `yaml:"format"`
@@ -105,6 +113,7 @@ func Default() *Config {
 		Metrics: MetricsConfig{CacheTTL: Duration(60 * time.Second)},
 		Insight: InsightConfig{IdleCPUThreshold: 5, ExpiringDays: 30},
 		Audit:   AuditConfig{Retention: Duration(180 * 24 * time.Hour)},
+		Changes: ChangesConfig{Retention: Duration(90 * 24 * time.Hour)},
 		Log:     LogConfig{Level: "info", Format: "text"},
 	}
 }
@@ -182,6 +191,7 @@ func applyEnv(c *Config) error {
 		}
 	}
 	str("OPS_APP_NAME", &c.App.Name)
+	str("OPS_EXTERNAL_URL", &c.App.ExternalURL)
 	str("OPS_ADDR", &c.Server.Addr)
 	str("OPS_DATA_DIR", &c.Data.Dir)
 	str("OPS_DB_PATH", &c.Data.DBPath)

@@ -88,6 +88,8 @@ type Summary struct {
 	Idle             int64            `json:"idle"`
 	IdleThreshold    float64          `json:"idle_threshold"`
 	Expiring         int64            `json:"expiring"`
+	WasteDisks       int64            `json:"waste_disks"`
+	WasteEIPs        int64            `json:"waste_eips"`
 	ExpiringDays     int              `json:"expiring_days"`
 	NextExpireInDays *int             `json:"next_expire_in_days"`
 	Distribution     []TypeCount      `json:"distribution"`
@@ -122,10 +124,11 @@ func (s *DashboardService) Summary(provider string) (*Summary, error) {
 	}
 
 	res := func() *gorm.DB { return scope(s.db.Model(&model.Resource{}), "provider") }
-	if err := res().Count(&out.Resources).Error; err != nil {
+	core := func() *gorm.DB { return res().Where("type IN ?", model.CoreTypes) }
+	if err := core().Count(&out.Resources).Error; err != nil {
 		return nil, err
 	}
-	if err := res().Select("COUNT(DISTINCT provider || ':' || region)").Scan(&out.Regions).Error; err != nil {
+	if err := core().Select("COUNT(DISTINCT provider || ':' || region)").Scan(&out.Regions).Error; err != nil {
 		return nil, err
 	}
 	if err := res().Where("type = ?", model.TypeVM).Count(&out.VMTotal).Error; err != nil {
@@ -135,6 +138,12 @@ func (s *DashboardService) Summary(provider string) (*Summary, error) {
 		return nil, err
 	}
 	if err := res().Where("type = ? AND status = ? AND cpu_24h IS NOT NULL AND cpu_24h < ?", model.TypeVM, model.StatusRunning, s.idleCPU).Count(&out.Idle).Error; err != nil {
+		return nil, err
+	}
+	if err := res().Where("type = ?", model.TypeDisk).Count(&out.WasteDisks).Error; err != nil {
+		return nil, err
+	}
+	if err := res().Where("type = ?", model.TypeEIP).Count(&out.WasteEIPs).Error; err != nil {
 		return nil, err
 	}
 	horizon := now.Add(time.Duration(s.expDays) * 24 * time.Hour)

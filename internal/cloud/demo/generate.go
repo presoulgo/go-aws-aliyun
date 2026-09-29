@@ -74,8 +74,9 @@ func generate(ak string, prof profile, now time.Time) *accountData {
 			g.used[h.name] = true
 		}
 	}
-	for _, typ := range []string{model.TypeVM, model.TypeRDS, model.TypeLB, model.TypeBucket} {
-		total := map[string]int{model.TypeVM: prof.counts.vm, model.TypeRDS: prof.counts.rds, model.TypeLB: prof.counts.lb, model.TypeBucket: prof.counts.bucket}[typ]
+	for _, typ := range []string{model.TypeVM, model.TypeRDS, model.TypeLB, model.TypeBucket, model.TypeDisk, model.TypeEIP} {
+		total := map[string]int{model.TypeVM: prof.counts.vm, model.TypeRDS: prof.counts.rds, model.TypeLB: prof.counts.lb, model.TypeBucket: prof.counts.bucket,
+			model.TypeDisk: prof.counts.disk, model.TypeEIP: prof.counts.eip}[typ]
 		n := 0
 		for _, h := range mine {
 			if h.typ == typ {
@@ -372,6 +373,44 @@ func (g *gen) resource(typ string) (cloud.Resource, float64) {
 		}
 		g.charge(&r)
 		return r, 0
+	case model.TypeDisk:
+		size := []int{20, 40, 100, 200, 500}[g.rng.IntN(5)]
+		var id, category, spec string
+		if aws {
+			id = "vol-0" + g.randString(hexdigits, 16)
+			category = []string{"gp3", "gp3", "gp2", "st1"}[g.rng.IntN(4)]
+			spec = fmt.Sprintf("%s · %d GiB", category, size)
+		} else {
+			id = "d-" + g.aliPrefix(region) + g.randString(alnum, 17)
+			category = []string{"cloud_essd", "cloud_essd", "cloud_efficiency"}[g.rng.IntN(3)]
+			spec = fmt.Sprintf("%s · %d GiB", map[string]string{"cloud_essd": "ESSD 云盘", "cloud_efficiency": "高效云盘"}[category], size)
+		}
+		extra := map[string]any{"size_gib": size, "category": category}
+		if !aws {
+			extra["detached_at"] = g.now.Add(-time.Duration(3+g.rng.IntN(200)) * 24 * time.Hour).UTC().Format("2006-01-02T15:04:05Z")
+		}
+		return cloud.Resource{
+			Type: model.TypeDisk, Region: region, Zone: g.zone(region), ResourceID: id, Name: id,
+			Status: model.StatusAvailable, RawStatus: "available", Spec: spec, ChargeType: model.ChargePostpaid,
+			CreatedAt: g.created(), Tags: map[string]string{}, Extra: extra,
+		}, 0
+	case model.TypeEIP:
+		ip := g.publicIP()
+		id := "eipalloc-0" + g.randString(hexdigits, 16)
+		extra := map[string]any{}
+		spec := ""
+		if !aws {
+			id = "eip-" + g.aliPrefix(region) + g.randString(alnum, 17)
+			bw := []int{1, 5, 10, 20}[g.rng.IntN(4)]
+			extra["bandwidth_mbps"] = bw
+			extra["internet_charge_type"] = "PayByTraffic"
+			spec = fmt.Sprintf("%d Mbps", bw)
+		}
+		return cloud.Resource{
+			Type: model.TypeEIP, Region: region, ResourceID: id, Name: ip, PublicIPs: []string{ip},
+			Status: model.StatusAvailable, RawStatus: "available", Spec: spec, ChargeType: model.ChargePostpaid,
+			CreatedAt: g.created(), Tags: map[string]string{}, Extra: extra,
+		}, 0
 	default:
 		name := g.uniqueName(fmt.Sprintf("%s-%s-%s", g.envPrefix(), bucketUses[g.rng.IntN(len(bucketUses))], g.randString(alnum, 4)))
 		size := math.Pow(10, 9+g.rng.Float64()*4.5)

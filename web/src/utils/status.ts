@@ -17,6 +17,7 @@ const resourceStatus: Record<ResourceStatus, StatusInfo> = {
   changing: { label: '变更中', tone: 'busy' },
   terminating: { label: '释放中', tone: 'busy' },
   failed: { label: '异常', tone: 'err' },
+  available: { label: '闲置', tone: 'warn' },
   unknown: { label: '未知', tone: 'off' },
 }
 
@@ -44,6 +45,8 @@ export const typeLabel: Record<ResourceType, string> = {
   rds: '数据库',
   lb: '负载均衡',
   bucket: '对象存储',
+  disk: '未挂载云盘',
+  eip: '未绑定弹性 IP',
 }
 
 export const typeProducts: Record<ResourceType, string> = {
@@ -51,6 +54,8 @@ export const typeProducts: Record<ResourceType, string> = {
   rds: 'RDS',
   lb: 'ELB / SLB·ALB',
   bucket: 'S3 / OSS',
+  disk: 'EBS / 云盘',
+  eip: 'Elastic IP / EIP',
 }
 
 export const roleLabel: Record<string, string> = { admin: '管理员', viewer: '只读' }

@@ -294,6 +294,20 @@ const syncRows = computed(() =>
         :warn="summary.expiring > 0"
         :to="{ path: '/resources', query: { expiring: '1', provider: provider === 'all' ? undefined : provider } }"
       />
+      <KpiCard
+        label="可优化资源"
+        icon="saving"
+        :value="formatNumber(summary.waste_disks + summary.waste_eips)"
+        :sub="`未挂载云盘 ${summary.waste_disks} · 未绑定 EIP ${summary.waste_eips}`"
+        :warn="summary.waste_disks + summary.waste_eips > 0"
+        :to="{
+          path: '/optimize',
+          query: {
+            kind: summary.waste_disks ? 'disk' : summary.waste_eips ? 'eip' : undefined,
+            provider: provider === 'all' ? undefined : provider,
+          },
+        }"
+      />
     </section>
 
     <div v-if="summary" class="charts">
@@ -486,7 +500,7 @@ const syncRows = computed(() =>
 
 .kpis {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
 }
 

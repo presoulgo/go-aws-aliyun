@@ -52,6 +52,8 @@ func (p *Provider) ResourceTypes() []cloud.TypeSpec {
 		{Type: model.TypeRDS},
 		{Type: model.TypeLB},
 		{Type: model.TypeBucket, Global: true},
+		{Type: model.TypeDisk},
+		{Type: model.TypeEIP},
 	}
 }
 
@@ -150,6 +152,10 @@ func (p *Provider) Collect(ctx context.Context, cred cloud.Credential, typ, regi
 		return collectELB(ctx, p.elb(cred, region), region)
 	case model.TypeBucket:
 		return collectS3(ctx, p.s3(cred), func(r string) cwAPI { return p.cloudwatch(cred, r) }, defaultRegion(cred.Partition), p.now())
+	case model.TypeDisk:
+		return collectVolumes(ctx, p.ec2(cred, region), region)
+	case model.TypeEIP:
+		return collectEIPs(ctx, p.ec2(cred, region), region)
 	}
 	return nil, nil
 }

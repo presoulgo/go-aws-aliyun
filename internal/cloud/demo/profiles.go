@@ -17,7 +17,7 @@ type SeedAccount struct {
 	Regions     []string
 }
 
-type counts struct{ vm, rds, lb, bucket int }
+type counts struct{ vm, rds, lb, bucket, disk, eip int }
 
 type profile struct {
 	provider  string
@@ -62,34 +62,34 @@ var profiles = map[string]profile{
 	akAWSProd: {
 		provider: model.ProviderAWS, uid: "482910345561", env: "prod", enabled: awsGlobalRegions,
 		resources: []string{"us-east-1", "us-west-2", "ap-northeast-1", "eu-central-1", "us-east-2", "ap-southeast-1", "eu-west-1", "ap-south-1", "sa-east-1"},
-		counts:    counts{vm: 120, rds: 14, lb: 18, bucket: 57},
+		counts:    counts{vm: 120, rds: 14, lb: 18, bucket: 57, disk: 6, eip: 3},
 	},
 	akAWSChina: {
 		provider: model.ProviderAWS, uid: "092566712208", env: "prod", enabled: awsChinaRegions,
 		resources: awsChinaRegions,
-		counts:    counts{vm: 38, rds: 4, lb: 5, bucket: 17},
+		counts:    counts{vm: 38, rds: 4, lb: 5, bucket: 17, disk: 2, eip: 1},
 	},
 	akAWSData: {
 		provider: model.ProviderAWS, uid: "771044329015", env: "data", enabled: awsGlobalRegions,
 		resources: []string{"ap-northeast-1", "eu-central-1", "us-west-2"},
-		counts:    counts{vm: 56, rds: 6, lb: 8, bucket: 21},
+		counts:    counts{vm: 56, rds: 6, lb: 8, bucket: 21, disk: 3, eip: 1},
 	},
 	akAliMain: {
 		provider: model.ProviderAliyun, uid: "1829330177664401", env: "prod", enabled: aliyunRegions,
 		resources: []string{"cn-hangzhou", "cn-shanghai", "cn-beijing", "cn-shenzhen", "cn-hongkong", "ap-southeast-1"},
-		counts:    counts{vm: 96, rds: 12, lb: 15, bucket: 24},
+		counts:    counts{vm: 96, rds: 12, lb: 15, bucket: 24, disk: 5, eip: 2},
 		expiring:  3, failRegion: "cn-hongkong",
 	},
 	akAliShop: {
 		provider: model.ProviderAliyun, uid: "1507442290112290", env: "prod", enabled: aliyunRegions,
 		resources: []string{"cn-hangzhou", "cn-shanghai", "cn-shenzhen", "cn-beijing"},
-		counts:    counts{vm: 112, rds: 14, lb: 17, bucket: 33},
+		counts:    counts{vm: 112, rds: 14, lb: 17, bucket: 33, disk: 5, eip: 2},
 		expiring:  3,
 	},
 	akAliTest: {
 		provider: model.ProviderAliyun, uid: "1391204488990876", env: "test", enabled: aliyunRegions,
 		resources: []string{"cn-beijing", "cn-hangzhou", "cn-zhangjiakou"},
-		counts:    counts{vm: 64, rds: 8, lb: 10, bucket: 15},
+		counts:    counts{vm: 64, rds: 8, lb: 10, bucket: 15, disk: 3, eip: 1},
 		expiring:  2,
 	},
 }

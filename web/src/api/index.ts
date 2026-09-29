@@ -2,7 +2,13 @@ import { http } from './http'
 import type {
   Account,
   AccountInput,
+  AlertEvent,
+  AlertRule,
+  AlertStatus,
   AuditLog,
+  ChannelInput,
+  NotifyChannel,
+  ChangeQuery,
   CompareResult,
   DashboardSummary,
   ListResult,
@@ -16,6 +22,7 @@ import type {
   ResourceFilters,
   Resource,
   ResourceQuery,
+  ResourceChange,
   Role,
   SyncJob,
   SyncStatus,
@@ -99,6 +106,28 @@ export const resourceApi = {
   filters: (q: ResourceQuery, signal?: AbortSignal) =>
     http.get<ResourceFilters>('/resources/filters', { params: params(q), signal }).then((r) => r.data),
   get: (id: number) => http.get<ResourceDetail>(`/resources/${id}`).then((r) => r.data),
+}
+
+export const alertApi = {
+  rules: () => http.get<ListResult<AlertRule>>('/alert-rules').then((r) => r.data),
+  updateRule: (key: string, body: { enabled: boolean; params: Record<string, number>; channel_ids: number[] }) =>
+    http.put(`/alert-rules/${key}`, body, { silent: true }),
+  events: (q: { status?: AlertStatus; rule?: string; account_id?: number; page?: number; page_size?: number }) =>
+    http.get<ListResult<AlertEvent>>('/alert-events', { params: params(q) }).then((r) => r.data),
+}
+
+export const channelApi = {
+  list: () => http.get<ListResult<NotifyChannel>>('/notify-channels').then((r) => r.data),
+  create: (body: ChannelInput) => http.post<NotifyChannel>('/notify-channels', body, { silent: true }).then((r) => r.data),
+  update: (id: number, body: ChannelInput) =>
+    http.put<NotifyChannel>(`/notify-channels/${id}`, body, { silent: true }).then((r) => r.data),
+  remove: (id: number) => http.delete(`/notify-channels/${id}`),
+  test: (id: number) => http.post(`/notify-channels/${id}/test`, undefined, { silent: true }),
+}
+
+export const changeApi = {
+  list: (q: ChangeQuery, signal?: AbortSignal) =>
+    http.get<ListResult<ResourceChange>>('/changes', { params: params(q), signal }).then((r) => r.data),
 }
 
 export const metricApi = {

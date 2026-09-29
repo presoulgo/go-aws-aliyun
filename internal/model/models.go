@@ -67,7 +67,17 @@ const (
 	TypeRDS    = "rds"
 	TypeLB     = "lb"
 	TypeBucket = "bucket"
+	// TypeDisk and TypeEIP only hold idle items (unattached disks, unbound
+	// elastic IPs): anything collected under them is waste.
+	TypeDisk = "disk"
+	TypeEIP  = "eip"
 )
+
+// CoreTypes are the inventory types counted as "resources" on the dashboard.
+var CoreTypes = []string{TypeVM, TypeRDS, TypeLB, TypeBucket}
+
+// WasteTypes are the types whose every item is an idle, billable resource.
+var WasteTypes = []string{TypeDisk, TypeEIP}
 
 // Normalized resource statuses.
 const (
@@ -80,6 +90,8 @@ const (
 	StatusTerminating = "terminating"
 	StatusFailed      = "failed"
 	StatusUnknown     = "unknown"
+	// StatusAvailable is an unattached disk or unbound elastic IP.
+	StatusAvailable = "available"
 )
 
 // Charge types.
@@ -168,6 +180,7 @@ const (
 	AuditAccount = "account"
 	AuditSync    = "sync"
 	AuditUser    = "user"
+	AuditAlert   = "alert"
 )
 
 // AuditLog is an append-only record of a security relevant operation.
@@ -184,7 +197,85 @@ type AuditLog struct {
 	CreatedAt time.Time `gorm:"index" json:"created_at"`
 }
 
+// Resource change actions.
+const (
+	ChangeCreated = "created"
+	ChangeUpdated = "updated"
+	ChangeDeleted = "deleted"
+)
+
+// ResourceChange records a resource appearing, changing or disappearing
+// between two syncs.
+type ResourceChange struct {
+	ID         uint         `gorm:"primaryKey" json:"id"`
+	AccountID  uint         `gorm:"not null;index:idx_change_resource,priority:1" json:"account_id"`
+	Provider   string       `gorm:"size:16;not null;index" json:"provider"`
+	Type       string       `gorm:"size:16;not null;index:idx_change_resource,priority:2" json:"type"`
+	Region     string       `gorm:"size:64;not null" json:"region"`
+	ResourceID string       `gorm:"size:255;not null;index:idx_change_resource,priority:3" json:"resource_id"`
+	Name       string       `gorm:"size:255" json:"name"`
+	Action     string       `gorm:"size:16;not null;index" json:"action"`
+	Changes    FieldChanges `gorm:"not null" json:"changes"`
+	JobID      uint         `gorm:"index" json:"job_id"`
+	CreatedAt  time.Time    `gorm:"index" json:"created_at"`
+}
+
+// Notification channel types.
+const (
+	ChannelFeishu  = "feishu"
+	ChannelWebhook = "webhook"
+)
+
+// NotifyChannel is where alerts are sent. The webhook URL works as a
+// credential, so it is stored encrypted like cloud secrets.
+type NotifyChannel struct {
+	ID     uint   `gorm:"primaryKey"`
+	Name   string `gorm:"size:64;not null"`
+	Type   string `gorm:"size:16;not null"`
+	URLEnc string `gorm:"size:2048;not null"`
+	// SecretEnc is the Feishu signing secret, empty when signing is off.
+	SecretEnc string `gorm:"size:1024"`
+	Enabled   bool   `gorm:"not null;default:true"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// AlertRule is the stored setting of one built-in alert rule.
+type AlertRule struct {
+	Key        string     `gorm:"primaryKey;size:32"`
+	Enabled    bool       `gorm:"not null"`
+	Params     JSONObject `gorm:"not null"`
+	ChannelIDs UintList   `gorm:"not null"`
+	UpdatedAt  time.Time
+}
+
+// Alert event statuses.
+const (
+	AlertFiring   = "firing"
+	AlertResolved = "resolved"
+)
+
+// AlertEvent is one alert raised by a rule for a resource or an account.
+type AlertEvent struct {
+	ID        uint   `gorm:"primaryKey" json:"id"`
+	RuleKey   string `gorm:"size:32;not null;index:idx_alert_open,priority:1" json:"rule"`
+	AccountID uint   `gorm:"not null;index:idx_alert_open,priority:2" json:"account_id"`
+	Status    string `gorm:"size:16;not null;index:idx_alert_open,priority:3" json:"status"`
+	// TargetKey identifies what the alert is about: "type:region:resource_id",
+	// or "account" for account level rules.
+	TargetKey    string     `gorm:"size:512;not null" json:"target_key"`
+	ResourceType string     `gorm:"size:16" json:"resource_type"`
+	Region       string     `gorm:"size:64" json:"region"`
+	ResourceID   string     `gorm:"size:255" json:"resource_id"`
+	Name         string     `gorm:"size:255" json:"name"`
+	Detail       string     `gorm:"type:text" json:"detail"`
+	FiredAt      time.Time  `gorm:"index" json:"fired_at"`
+	ResolvedAt   *time.Time `json:"resolved_at"`
+	NotifyError  string     `gorm:"type:text" json:"notify_error"`
+}
+
 // All lists every model for migrations.
 func All() []any {
-	return []any{&User{}, &CloudAccount{}, &Resource{}, &SyncJob{}, &HostCPUHourly{}, &AuditLog{}}
+	return []any{&User{}, &CloudAccount{}, &Resource{}, &SyncJob{}, &HostCPUHourly{}, &AuditLog{}, &ResourceChange{},
+		&NotifyChannel{}, &AlertRule{}, &AlertEvent{}}
 }

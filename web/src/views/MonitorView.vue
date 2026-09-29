@@ -22,7 +22,7 @@ import { chartColors } from '@/utils/charts'
 import { dayjs, formatMetric, unitLabel } from '@/utils/format'
 import { providerLabel } from '@/utils/status'
 
-type MonitorType = Exclude<ResourceType, 'bucket'>
+type MonitorType = Exclude<ResourceType, 'bucket' | 'disk' | 'eip'>
 const MAX = 4
 const monitorTypes: { value: MonitorType; label: string }[] = [
   { value: 'vm', label: '云主机' },

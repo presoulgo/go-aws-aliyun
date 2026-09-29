@@ -5,6 +5,8 @@
 app:
   # 系统名称，显示在登录页、侧边栏和浏览器标题中。        OPS_APP_NAME
   name: 云枢
+  # 平台的访问地址，例如 https://ops.example.com。填写后告警消息里会带“在云枢中查看”链接。   OPS_EXTERNAL_URL
+  external_url: ""
 
 server:
   # 监听地址。                                          OPS_ADDR
@@ -60,6 +62,10 @@ insight:
 audit:
   # 审计日志保留时长。                                   OPS_AUDIT_RETENTION
   retention: 180d
+
+changes:
+  # 资源变更记录（新增 / 变更 / 删除）的保留时长。
+  retention: 90d
 
 log:
   # 日志级别：debug / info / warn / error。             OPS_LOG_LEVEL

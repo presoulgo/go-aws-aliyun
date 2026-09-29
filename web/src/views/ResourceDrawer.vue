@@ -7,8 +7,18 @@ import CloudTag from '@/components/CloudTag.vue'
 import MetricChart, { type ChartSeries } from '@/components/MetricChart.vue'
 import SegmentedControl from '@/components/SegmentedControl.vue'
 import StatusTag from '@/components/StatusTag.vue'
-import { errorMessage, metricApi, resourceApi, type MetricsResult, type RangeKey, type ResourceDetail } from '@/api'
+import {
+  changeApi,
+  errorMessage,
+  metricApi,
+  resourceApi,
+  type MetricsResult,
+  type RangeKey,
+  type ResourceChange,
+  type ResourceDetail,
+} from '@/api'
 import { useAppStore } from '@/stores/app'
+import { actionInfo, changeText } from '@/utils/change'
 import { chartColors } from '@/utils/charts'
 import { copyText } from '@/utils/clipboard'
 import { dayjs, formatBytes, formatDateTime, formatMetric, formatNumber } from '@/utils/format'
@@ -37,7 +47,7 @@ const emit = defineEmits<{ close: [] }>()
 const router = useRouter()
 const app = useAppStore()
 
-type Tab = 'info' | 'tags' | 'monitor' | 'raw'
+type Tab = 'info' | 'tags' | 'monitor' | 'changes' | 'raw'
 
 const detail = ref<ResourceDetail | null>(null)
 const loadingDetail = ref(false)
@@ -91,6 +101,31 @@ async function loadMetrics() {
 
 watch([() => detail.value?.id, range, tab], () => void loadMetrics())
 
+// ---------- 变更历史 ----------
+const history = ref<ResourceChange[] | null>(null)
+const historyTotal = ref(0)
+let historyOf = 0 // 已加载历史的资源，切换资源或重新打开抽屉时重新加载
+
+watch(
+  () => props.id,
+  () => (historyOf = 0),
+)
+watch([() => detail.value?.id, tab], async () => {
+  const d = detail.value
+  if (!d || tab.value !== 'changes' || historyOf === d.id) return
+  historyOf = d.id
+  history.value = null
+  try {
+    const res = await changeApi.list({ account_id: d.account_id, type: d.type, resource_id: d.resource_id, page_size: 20 })
+    if (detail.value?.id === d.id) {
+      history.value = res.items
+      historyTotal.value = res.total
+    }
+  } catch {
+    history.value = []
+  }
+})
+
 const rangeOptions: { value: RangeKey; label: string }[] = [
   { value: '1h', label: '1 小时' },
   { value: '6h', label: '6 小时' },
@@ -106,6 +141,7 @@ const tabs = computed(() => {
     { value: 'tags', label: `标签 · ${d ? Object.keys(d.tags ?? {}).length : 0}` },
   ]
   if (d?.supported_metrics.length) list.push({ value: 'monitor', label: '监控' })
+  list.push({ value: 'changes', label: '变更历史' })
   list.push({ value: 'raw', label: '原始数据' })
   return list
 })
@@ -238,13 +274,15 @@ const cpuStats = computed(() => {
 const bandwidthCap = computed(() => (detail.value ? extraNum(detail.value, 'bandwidth_out_mbps') : null))
 
 // ---------- 基本信息 ----------
+const idLabel: Record<string, string> = { bucket: '存储桶', disk: '云盘 ID', eip: 'EIP ID' }
+
 const info = computed(() => {
   const d = detail.value
   if (!d) return []
   const st = resourceStatusInfo(d.status)
   const exp = expiryInfo(d, 30, app.now)
   const rows: { k: string; v: string; mono?: boolean }[] = [
-    { k: d.type === 'bucket' ? '存储桶' : '实例 ID', v: d.resource_id, mono: true },
+    { k: idLabel[d.type] ?? '实例 ID', v: d.resource_id, mono: true },
     {
       k: '云账号',
       v: `${providerLabel[d.provider]} · ${account.value}${d.cloud_account_uid ? `（UID ${formatUID(d.cloud_account_uid, d.provider)}）` : ''}`,
@@ -289,6 +327,15 @@ const info = computed(() => {
     )
     const bw = extraNum(d, 'bandwidth_mbps')
     if (bw) rows.push({ k: '带宽', v: `${bw} Mbps` })
+  } else if (d.type === 'disk') {
+    rows.push({ k: '规格', v: d.spec || '—' })
+    const detached = extraStr(d, 'detached_at')
+    if (detached) rows.push({ k: '卸载时间', v: formatDateTime(detached) })
+  } else if (d.type === 'eip') {
+    rows.push(
+      { k: '公网 IP', v: ips(d.public_ip).join(', ') || '—', mono: true },
+      { k: '带宽', v: d.spec || '—' },
+    )
   } else {
     const size = extraNum(d, 'size_bytes')
     rows.push(
@@ -448,6 +495,29 @@ function compare() {
               </span>
             </div>
             <p v-else class="hint muted">该资源没有标签。</p>
+          </template>
+
+          <!-- 变更历史 -->
+          <template v-else-if="tab === 'changes'">
+            <p class="hint">
+              每次同步与上一次对比记录的变化，只保留最近 {{ app.meta.change_retention_days }} 天<template v-if="historyTotal > 20">
+                ，这里显示最近 20 条（共 {{ historyTotal }} 条）</template
+              >。
+            </p>
+            <div v-if="history === null" v-loading="true" class="history-loading" />
+            <ol v-else-if="history.length" class="history">
+              <li v-for="c in history" :key="c.id" class="history-item">
+                <span class="history-time">{{ dayjs(c.created_at).format('MM-DD HH:mm') }}</span>
+                <span class="history-act" :class="actionInfo[c.action].tone">{{ actionInfo[c.action].label }}</span>
+                <span class="history-body">
+                  <template v-if="c.changes.length">
+                    <span v-for="f in c.changes" :key="f.field" class="history-line">{{ changeText(f) }}</span>
+                  </template>
+                  <span v-else class="history-line muted">{{ c.action === 'created' ? '同步时首次发现' : '同步时已不存在' }}</span>
+                </span>
+              </li>
+            </ol>
+            <p v-else class="hint muted">暂无变更记录。账号首次同步不记录新增，之后的变化会显示在这里。</p>
           </template>
 
           <!-- 原始数据 -->
@@ -769,6 +839,72 @@ function compare() {
   padding: 5px 8px;
   background: #fff;
   color: var(--ys-text);
+}
+
+.hint.muted,
+.history-line.muted {
+  color: var(--ys-text-muted);
+}
+
+.history-loading {
+  height: 80px;
+}
+
+.history {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-item {
+  padding: 10px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-bottom: 1px solid var(--ys-divider);
+  font-size: 13px;
+}
+
+.history-time {
+  flex-shrink: 0;
+  width: 84px;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--ys-text-label);
+}
+
+.history-act {
+  flex-shrink: 0;
+  padding: 0 8px;
+  border-radius: var(--ys-radius-tag);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.history-act.ok {
+  background: var(--ys-ok-bg);
+  color: var(--ys-ok-fg);
+}
+
+.history-act.busy {
+  background: var(--ys-primary-soft);
+  color: var(--ys-primary);
+}
+
+.history-act.err {
+  background: var(--ys-err-bg);
+  color: var(--ys-err-fg);
+}
+
+.history-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 20px;
+  word-break: break-all;
 }
 
 .raw-bar {
