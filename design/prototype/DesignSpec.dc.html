@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设计规范</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;font-family:'IBM Plex Sans','Noto Sans SC','PingFang SC',sans-serif;color:#151821}
+a{color:#2443B5}a:hover{color:#18318C}
+input::placeholder{color:#6B7280}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 44px 56px; display: flex; flex-direction: column; gap: 28px; background: #F4F5F7; color: #151821; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif;">
+
+  <header style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 22px; border-bottom: 1px solid #E4E7EC;">
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: 0.08em; color: #2443B5;">03 / 设计规范</span>
+      <h1 style="margin: 0; font-size: 34px; font-weight: 600;">云枢设计规范 · 方向 B 明亮专业</h1>
+    </div>
+    <span style="font-size: 13px; color: #555C6B;">实现时映射为 Element Plus 主题变量（--el-color-primary 等）</span>
+  </header>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; flex-grow: 1;">
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <section style="padding: 20px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">品牌色</h2>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 56px; border-radius: 8px; background: #2443B5;"></span><span style="font-size: 12px; font-weight: 500;">主色</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#2443B5</span></div>
+          <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 56px; border-radius: 8px; background: #18318C;"></span><span style="font-size: 12px; font-weight: 500;">悬停 / 按下</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#18318C</span></div>
+          <div style="display: flex; flex-direction: column; gap: 6px;"><span style="height: 56px; border-radius: 8px; background: #EDF1FD; border: 1px solid #D5DDF8; box-sizing: border-box;"></span><span style="font-size: 12px; font-weight: 500;">选中底色</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#EDF1FD</span></div>
+        </div>
+      </section>
+      <section style="padding: 20px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">云厂商标识</h2>
+        <div style="display: flex; gap: 12px;">
+          <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 8px;">
+            <span style="height: 40px; border-radius: 8px; background: #22406E;"></span>
+            <div style="display: flex; align-items: center; justify-content: space-between;"><span style="padding: 1px 7px; border-radius: 5px; background: #E6ECF5; color: #1B2F52; font-size: 12px;">AWS</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#22406E</span></div>
+          </div>
+          <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 8px;">
+            <span style="height: 40px; border-radius: 8px; background: #F08A24;"></span>
+            <div style="display: flex; align-items: center; justify-content: space-between;"><span style="padding: 1px 7px; border-radius: 5px; background: #FDEEE2; color: #A94600; font-size: 12px;">阿里云</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#F08A24</span></div>
+          </div>
+        </div>
+        <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #555C6B;">深蓝与橙色明暗差异大，色弱用户和黑白打印也能区分；图表里两朵云固定使用这两个颜色。</p>
+      </section>
+      <section style="padding: 20px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">中性色</h2>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; font-size: 12px;">
+          <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 22px; height: 22px; border-radius: 5px; background: #151821;"></span><span style="display: flex; flex-direction: column;"><span>正文</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#151821</span></span></div>
+          <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 22px; height: 22px; border-radius: 5px; background: #555C6B;"></span><span style="display: flex; flex-direction: column;"><span>次要文字</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#555C6B</span></span></div>
+          <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 22px; height: 22px; border-radius: 5px; background: #6B7280;"></span><span style="display: flex; flex-direction: column;"><span>辅助文字</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#6B7280</span></span></div>
+          <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 22px; height: 22px; border-radius: 5px; background: #E4E7EC;"></span><span style="display: flex; flex-direction: column;"><span>边框</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#E4E7EC</span></span></div>
+          <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 22px; height: 22px; border-radius: 5px; background: #EEF0F3;"></span><span style="display: flex; flex-direction: column;"><span>分割线</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#EEF0F3</span></span></div>
+          <div style="display: flex; align-items: center; gap: 8px;"><span style="width: 22px; height: 22px; border-radius: 5px; background: #F4F5F7; border: 1px solid #E4E7EC; box-sizing: border-box;"></span><span style="display: flex; flex-direction: column;"><span>页面背景</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#F4F5F7</span></span></div>
+        </div>
+      </section>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <section style="padding: 20px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">字体与字号</h2>
+        <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #555C6B;">IBM Plex Sans（西文、数字）+ Noto Sans SC（中文）；实例 ID、IP、AK 用 IBM Plex Mono。</p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #EEF0F3;"><span style="font-size: 30px; font-weight: 600; line-height: 1;">784</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">指标数字 30 / 600</span></div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #EEF0F3;"><span style="font-size: 22px; font-weight: 600;">资源中心</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">页面标题 22 / 600</span></div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #EEF0F3;"><span style="font-size: 15px; font-weight: 600;">CPU 使用率 Top 5</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">卡片标题 15 / 600</span></div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #EEF0F3;"><span style="font-size: 14px;">菜单与正文文字</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">正文 14 / 400</span></div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid #EEF0F3;"><span style="font-size: 13px;">表格单元格文字</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">表格 13 / 400</span></div>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">i-bp1f3k9x2m7qa8d0c1e</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">等宽 12 / 400</span></div>
+        </div>
+      </section>
+      <section style="padding: 20px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">按钮</h2>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px;">
+          <button type="button" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #2443B5; color: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 500;">主要按钮</button>
+          <button type="button" style="height: 36px; padding: 0 16px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: inherit; font-size: 13px;">次要按钮</button>
+          <button type="button" style="height: 36px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #2443B5; font-family: inherit; font-size: 13px;">文字按钮</button>
+          <button type="button" style="height: 36px; padding: 0 16px; border: 1px solid #F3C7C3; border-radius: 8px; background: #FFFFFF; color: #B42318; font-family: inherit; font-size: 13px;">危险操作</button>
+        </div>
+        <div style="display: flex; gap: 2px; padding: 3px; border-radius: 9px; background: #E9EBEF; align-self: flex-start;">
+          <button type="button" aria-pressed="true" style="height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: #FFFFFF; color: #151821; font-family: inherit; font-size: 13px; font-weight: 500;">全部</button>
+          <button type="button" aria-pressed="false" style="height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: transparent; color: #555C6B; font-family: inherit; font-size: 13px;">AWS</button>
+          <button type="button" aria-pressed="false" style="height: 30px; padding: 0 14px; border: 0; border-radius: 6px; background: transparent; color: #555C6B; font-family: inherit; font-size: 13px;">阿里云</button>
+        </div>
+      </section>
+      <section style="padding: 20px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column; gap: 10px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">输入框</h2>
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #3F4654;">
+          AccessKey ID
+          <input type="text" placeholder="例如 AKIA… 或 LTAI…" style="height: 36px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: 'IBM Plex Mono', monospace; font-size: 13px;">
+        </label>
+      </section>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      <section style="padding: 20px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">资源状态</h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: #E9F6EF; color: #16804A; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #1F9D5B;"></span>运行中</span>
+          <span style="display: flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: #F1F3F7; color: #3F4654; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #9AA1AD;"></span>已停止</span>
+          <span style="display: flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: #EDF1FD; color: #2443B5; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #2443B5;"></span>启动中 / 变更中</span>
+          <span style="display: flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: #FDECEA; color: #B42318; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D92D20;"></span>异常</span>
+          <span style="display: flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: #FFF1DC; color: #8A4B00; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #E08A00;"></span>即将到期 / 部分成功</span>
+        </div>
+        <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #555C6B;">状态一律“圆点 + 文字”，不只靠颜色表达；两家云的原始状态先归一化再展示。</p>
+      </section>
+      <section style="padding: 20px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">多资源对比曲线配色</h2>
+        <div style="display: flex; gap: 10px;">
+          <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 6px;"><span style="height: 6px; border-radius: 3px; background: #2443B5;"></span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#2443B5</span></div>
+          <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 6px;"><span style="height: 6px; border-radius: 3px; background: #E07A1F;"></span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#E07A1F</span></div>
+          <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 6px;"><span style="height: 6px; border-radius: 3px; background: #13866F;"></span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#13866F</span></div>
+          <div style="flex: 1 1 0; display: flex; flex-direction: column; gap: 6px;"><span style="height: 6px; border-radius: 3px; background: #8B3FB8;"></span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #555C6B;">#8B3FB8</span></div>
+        </div>
+      </section>
+      <section style="padding: 20px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">圆角、间距与表格行</h2>
+        <div style="display: flex; gap: 10px; font-size: 12px; color: #3F4654;">
+          <span style="padding: 6px 10px; border: 1px solid #E4E7EC; border-radius: 12px;">卡片 12</span>
+          <span style="padding: 6px 10px; border: 1px solid #E4E7EC; border-radius: 8px;">控件 8</span>
+          <span style="padding: 6px 10px; border: 1px solid #E4E7EC; border-radius: 5px;">标签 5</span>
+          <span style="padding: 6px 10px; border: 1px dashed #C9CED6; border-radius: 5px; font-family: 'IBM Plex Mono', monospace;">4 · 8 · 12 · 16 · 24</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 12px; border: 1px solid #EEF0F3; border-radius: 8px;">
+          <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;"><a href="#" style="font-size: 13px; font-weight: 500; text-decoration: none;">prod-api-07</a><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">i-bp1f3k9x2m7qa8d0c1e</span></span>
+          <span style="padding: 1px 7px; border-radius: 5px; background: #FDEEE2; color: #A94600; font-size: 12px;">阿里云</span>
+          <span style="display: flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: #E9F6EF; color: #16804A; font-size: 12px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #1F9D5B;"></span>运行中</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">10.12.4.21</span>
+        </div>
+      </section>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

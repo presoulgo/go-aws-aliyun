@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>顶栏</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<header style="position: relative; width: 1208px; height: 64px; box-sizing: border-box; padding: 0 28px; display: flex; align-items: center; gap: 20px; background: #FFFFFF; border-bottom: 1px solid #E4E7EC; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; color: #151821;">
+  <label style="display: flex; align-items: center; gap: 8px; width: 380px; height: 38px; box-sizing: border-box; padding: 0 12px; border: 1px solid #DDE1E7; border-radius: 8px; background: #F7F8FA; color: #6B7280;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+    <input type="search" aria-label="全局搜索资源" placeholder="搜索实例 ID、IP、名称或标签" style="flex-grow: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #151821; font-family: inherit; font-size: 13px;">
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 1px 6px; border: 1px solid #DDE1E7; border-radius: 4px; background: #FFFFFF;">/</span>
+  </label>
+  <a href="Accounts.dc.html" style="margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #E9F6EF; color: #16804A; font-size: 12px; text-decoration: none;">
+    <span style="width: 7px; height: 7px; border-radius: 50%; background: #1F9D5B;"></span>
+    同步正常 · 2 分钟前
+  </a>
+  <div style="width: 1px; height: 24px; background: #E4E7EC;"></div>
+  <button type="button" aria-label="用户菜单" aria-expanded="{{menuOpen}}" onClick="{{toggle}}" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 8px; border: 0; border-radius: 8px; background: {{btnBg}}; color: #151821; font-family: inherit; cursor: pointer;">
+    <span style="width: 32px; height: 32px; border-radius: 50%; background: #DDE4F8; color: #2443B5; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;">A</span>
+    <span style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.25;"><span style="font-size: 13px; font-weight: 500;">admin</span><span style="font-size: 11px; color: #6B7280;">管理员</span></span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+  </button>
+  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position: absolute; top: 58px; right: 28px; z-index: 20; width: 200px; box-sizing: border-box; padding: 6px; display: flex; flex-direction: column; gap: 2px; border: 1px solid #E4E7EC; border-radius: 10px; background: #FFFFFF; box-shadow: 0 12px 32px rgba(21, 24, 33, 0.14);">
+      <div style="padding: 8px 10px 10px 10px; display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid #EEF0F3; margin-bottom: 4px;">
+        <span style="font-size: 13px; font-weight: 600;">admin</span>
+        <span style="font-size: 12px; color: #6B7280;">角色：管理员 · 上次登录 09:12</span>
+      </div>
+      <button type="button" style="height: 36px; padding: 0 10px; display: flex; align-items: center; gap: 10px; border: 0; border-radius: 6px; background: transparent; color: #151821; font-family: inherit; font-size: 13px; text-align: left; cursor: pointer;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9.5" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+        修改密码
+      </button>
+      <a href="Login.dc.html" style="height: 36px; padding: 0 10px; display: flex; align-items: center; gap: 10px; border-radius: 6px; color: #B42318; font-size: 13px; text-decoration: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"></path></svg>
+        退出登录
+      </a>
+    </div>
+  </sc-if>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1208,"height":64}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var open = !!(this.state && this.state.open);
+    return {
+      menuOpen: open,
+      btnBg: open ? '#F1F3F7' : 'transparent',
+      toggle: () => this.setState({ open: !open })
+    };
+  }
+}
+</script>
+</body>
+</html>

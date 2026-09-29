@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>方向 C · 工业控制台</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#ECEBE5;font-family:'IBM Plex Mono','Noto Sans SC','PingFang SC',monospace;color:#141414}
+a{color:#141414}a:hover{color:#1F4FB5}
+input::placeholder{color:#5E5E57}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; flex-direction: column; background: #ECEBE5; color: #141414; font-family: 'IBM Plex Mono', 'Noto Sans SC', 'PingFang SC', monospace;">
+
+  <header style="height: 56px; flex-shrink: 0; box-sizing: border-box; padding: 0 20px; display: flex; align-items: center; gap: 28px; background: #141414; color: #ECEBE5;">
+    <div style="display: flex; align-items: baseline; gap: 10px;">
+      <span style="font-family: 'Noto Sans SC', sans-serif; font-size: 19px; font-weight: 700; letter-spacing: 0.06em;">云枢</span>
+      <span style="font-size: 12px; letter-spacing: 0.12em; color: #A8A79F;">/ OPS CONSOLE</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 22px; font-size: 12px; letter-spacing: 0.06em; color: #C9C8C0;">
+      <span style="display: flex; align-items: center; gap: 8px;"><span style="width: 8px; height: 8px; background: #7FD1A0;"></span>SYNC OK</span>
+      <span>6 ACCOUNTS</span>
+      <span>27 REGIONS</span>
+      <span>784 RESOURCES</span>
+    </div>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 22px; font-size: 12px; letter-spacing: 0.04em;">
+      <span style="color: #C9C8C0;">2026-09-28 12:04 CST</span>
+      <button type="button" aria-label="用户菜单" style="height: 32px; padding: 0 12px; display: flex; align-items: center; gap: 8px; border: 1px solid #4A4A44; background: transparent; color: #ECEBE5; font-family: inherit; font-size: 12px; cursor: pointer;">admin<span style="font-family: 'Noto Sans SC', sans-serif; color: #A8A79F;">管理员</span></button>
+    </div>
+  </header>
+
+  <nav aria-label="主导航" style="height: 44px; flex-shrink: 0; box-sizing: border-box; display: flex; align-items: stretch; border-bottom: 1px solid #141414; background: #ECEBE5;">
+    <a href="#" aria-current="page" style="display: flex; align-items: center; gap: 10px; padding: 0 20px; background: #141414; color: #ECEBE5; text-decoration: none; font-size: 13px;"><span style="color: #A8A79F;">01</span><span style="font-family: 'Noto Sans SC', sans-serif;">概览</span></a>
+    <a href="#" style="display: flex; align-items: center; gap: 10px; padding: 0 20px; border-right: 1px solid #141414; text-decoration: none; font-size: 13px;"><span style="color: #5E5E57;">02</span><span style="font-family: 'Noto Sans SC', sans-serif;">资源中心</span></a>
+    <a href="#" style="display: flex; align-items: center; gap: 10px; padding: 0 20px; border-right: 1px solid #141414; text-decoration: none; font-size: 13px;"><span style="color: #5E5E57;">03</span><span style="font-family: 'Noto Sans SC', sans-serif;">监控中心</span></a>
+    <a href="#" style="display: flex; align-items: center; gap: 10px; padding: 0 20px; border-right: 1px solid #141414; text-decoration: none; font-size: 13px;"><span style="color: #5E5E57;">04</span><span style="font-family: 'Noto Sans SC', sans-serif;">云账号</span></a>
+    <a href="#" style="display: flex; align-items: center; gap: 10px; padding: 0 20px; border-right: 1px solid #141414; text-decoration: none; font-size: 13px;"><span style="color: #5E5E57;">05</span><span style="font-family: 'Noto Sans SC', sans-serif;">系统管理</span></a>
+    <label style="margin-left: auto; width: 360px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-left: 1px solid #141414; font-size: 13px;">
+      <span aria-hidden="true" style="font-weight: 600;">&gt;</span>
+      <input type="search" aria-label="搜索资源" placeholder="搜索 ID / IP / 名称" style="flex-grow: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #141414; font-family: 'IBM Plex Mono', 'Noto Sans SC', monospace; font-size: 13px;">
+    </label>
+    <button type="button" style="display: flex; align-items: center; gap: 8px; padding: 0 20px; border: 0; border-left: 1px solid #141414; background: #EA6A1F; color: #141414; font-family: 'Noto Sans SC', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="square" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>
+      立即同步
+    </button>
+  </nav>
+
+  <main style="flex-grow: 1; box-sizing: border-box; padding: 20px;">
+    <div style="height: 760px; box-sizing: border-box; display: flex; flex-direction: column; border: 1px solid #141414; background: #F6F5F0;">
+
+      <section aria-label="关键指标" style="height: 120px; flex-shrink: 0; display: flex;">
+        <div style="flex: 1 1 0; box-sizing: border-box; padding: 14px 18px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid #141414;">
+          <span style="font-size: 11px; letter-spacing: 0.08em; color: #4A4A44;">A1 <span style="font-family: 'Noto Sans SC', sans-serif;">纳管账号</span></span>
+          <span style="font-size: 46px; font-weight: 500; line-height: 1;">06</span>
+          <span style="font-size: 12px; color: #4A4A44;">AWS 3 / <span style="font-family: 'Noto Sans SC', sans-serif;">阿里云</span> 3</span>
+        </div>
+        <div style="flex: 1 1 0; box-sizing: border-box; padding: 14px 18px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid #141414;">
+          <span style="font-size: 11px; letter-spacing: 0.08em; color: #4A4A44;">A2 <span style="font-family: 'Noto Sans SC', sans-serif;">资源总数</span></span>
+          <span style="font-size: 46px; font-weight: 500; line-height: 1;">784</span>
+          <span style="font-size: 12px; color: #4A4A44;">VM 486 / RDS 58 / LB 73 / OSS 167</span>
+        </div>
+        <div style="flex: 1 1 0; box-sizing: border-box; padding: 14px 18px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid #141414;">
+          <span style="font-size: 11px; letter-spacing: 0.08em; color: #4A4A44;">A3 <span style="font-family: 'Noto Sans SC', sans-serif;">运行中主机</span></span>
+          <span style="font-size: 46px; font-weight: 500; line-height: 1;">441<span style="font-size: 22px; color: #5E5E57;">/486</span></span>
+          <span style="font-size: 12px; color: #4A4A44;">UP 90.7%</span>
+        </div>
+        <div style="flex: 1 1 0; box-sizing: border-box; padding: 14px 18px; display: flex; flex-direction: column; justify-content: space-between; border-right: 1px solid #141414;">
+          <span style="font-size: 11px; letter-spacing: 0.08em; color: #4A4A44;">A4 <span style="font-family: 'Noto Sans SC', sans-serif;">闲置主机</span></span>
+          <span style="font-size: 46px; font-weight: 500; line-height: 1;">037</span>
+          <span style="font-size: 12px; color: #4A4A44;">CPU 24H AVG &lt; 5%</span>
+        </div>
+        <div style="flex: 1 1 0; box-sizing: border-box; padding: 14px 18px; display: flex; flex-direction: column; justify-content: space-between; background: #141414; color: #ECEBE5;">
+          <span style="font-size: 11px; letter-spacing: 0.08em; color: #C9C8C0;">A5 <span style="font-family: 'Noto Sans SC', sans-serif;">30 天内到期</span></span>
+          <span style="font-size: 46px; font-weight: 500; line-height: 1; color: #FF9B55;">012</span>
+          <span style="font-size: 12px; color: #C9C8C0;">NEXT IN 8D</span>
+        </div>
+      </section>
+
+      <div style="height: 340px; flex-shrink: 0; display: flex; border-top: 1px solid #141414;">
+        <section style="flex-grow: 1; box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid #141414;">
+          <div style="height: 20px; display: flex; align-items: center; gap: 20px; font-size: 12px;">
+            <h2 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em;">B1 <span style="font-family: 'Noto Sans SC', sans-serif;">主机 CPU 均值</span> · 24H · 1H STEP</h2>
+            <span style="margin-left: auto; display: flex; align-items: center; gap: 8px;"><span style="width: 18px; height: 2px; background: #1F4FB5;"></span>AWS 214</span>
+            <span style="display: flex; align-items: center; gap: 8px;"><span style="width: 18px; height: 2px; background: #EA6A1F;"></span><span style="font-family: 'Noto Sans SC', sans-serif;">阿里云</span> 272</span>
+          </div>
+          <svg width="944" height="266" viewBox="0 0 944 266" role="img" aria-label="近 24 小时 AWS 与阿里云主机 CPU 均值阶梯图" style="display: block;">
+            <line x1="48" y1="12" x2="936" y2="12" stroke="#C9C8C0" stroke-width="1"></line>
+            <line x1="48" y1="68" x2="936" y2="68" stroke="#C9C8C0" stroke-width="1"></line>
+            <line x1="48" y1="124" x2="936" y2="124" stroke="#C9C8C0" stroke-width="1"></line>
+            <line x1="48" y1="180" x2="936" y2="180" stroke="#C9C8C0" stroke-width="1"></line>
+            <line x1="48" y1="236" x2="936" y2="236" stroke="#141414" stroke-width="1"></line>
+            <text x="40" y="16" text-anchor="end" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">60</text>
+            <text x="40" y="72" text-anchor="end" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">45</text>
+            <text x="40" y="128" text-anchor="end" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">30</text>
+            <text x="40" y="184" text-anchor="end" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">15</text>
+            <text x="40" y="240" text-anchor="end" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">0</text>
+            <path d="{{aliStep}}" fill="none" stroke="#EA6A1F" stroke-width="1.75"></path>
+            <path d="{{awsStep}}" fill="none" stroke="#1F4FB5" stroke-width="1.75"></path>
+            <line x1="936" y1="12" x2="936" y2="236" stroke="#141414" stroke-width="1" stroke-dasharray="2 3"></line>
+            <rect x="898" y="0" width="38" height="14" fill="#141414"></rect>
+            <text x="917" y="10.5" text-anchor="middle" font-size="9" fill="#ECEBE5" font-family="IBM Plex Mono, monospace">NOW</text>
+            <text x="48" y="258" text-anchor="start" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">13:00</text>
+            <text x="202.4" y="258" text-anchor="middle" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">17:00</text>
+            <text x="356.9" y="258" text-anchor="middle" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">21:00</text>
+            <text x="511.3" y="258" text-anchor="middle" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">01:00</text>
+            <text x="665.7" y="258" text-anchor="middle" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">05:00</text>
+            <text x="820.2" y="258" text-anchor="middle" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">09:00</text>
+            <text x="936" y="258" text-anchor="end" font-size="11" fill="#4A4A44" font-family="IBM Plex Mono, monospace">12:00</text>
+          </svg>
+        </section>
+
+        <section style="width: 420px; flex-shrink: 0; box-sizing: border-box; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;">
+          <h2 style="margin: 0; height: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; display: flex; align-items: center;">B2 <span style="font-family: 'Noto Sans SC', sans-serif; margin-left: 6px;">地域分布</span>&#160;· TOP 6</h2>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <sc-for list="{{regions}}" as="g" hint-placeholder-count="6">
+              <div style="display: flex; align-items: center; gap: 10px; height: 26px; font-size: 12px;">
+                <span style="width: 118px; flex-shrink: 0;">{{g.name}}</span>
+                <span style="width: 10px; height: 10px; flex-shrink: 0; background: {{g.color}};"></span>
+                <div style="flex-grow: 1; height: 14px;">
+                  <div style="width: {{g.pct}}%; height: 14px; background: repeating-linear-gradient(90deg, {{g.color}} 0 5px, transparent 5px 7px);"></div>
+                </div>
+                <span style="width: 34px; text-align: right; font-weight: 600;">{{g.count}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top: auto; padding-top: 10px; border-top: 1px dashed #8C8B84; display: flex; justify-content: space-between; font-size: 12px; color: #4A4A44;">
+            <span style="font-family: 'Noto Sans SC', sans-serif;">其余 21 个地域</span>
+            <span>183</span>
+          </div>
+        </section>
+      </div>
+
+      <div style="flex-grow: 1; display: flex; border-top: 1px solid #141414;">
+        <section style="flex: 1.25 1 0; box-sizing: border-box; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; border-right: 1px solid #141414;">
+          <h2 style="margin: 0; height: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; display: flex; align-items: center;">C1&#160;<span style="font-family: 'Noto Sans SC', sans-serif;">CPU 使用率</span>&#160;TOP 5 · 1H</h2>
+          <div style="display: flex; flex-direction: column; font-size: 12px;">
+            <div style="height: 28px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #141414; color: #4A4A44;">
+              <span style="width: 24px; flex-shrink: 0;">#</span>
+              <span style="flex-grow: 1; font-family: 'Noto Sans SC', sans-serif;">实例</span>
+              <span style="width: 56px; flex-shrink: 0;">CLOUD</span>
+              <span style="width: 112px; flex-shrink: 0;">REGION</span>
+              <span style="width: 52px; flex-shrink: 0; text-align: right;">CPU%</span>
+            </div>
+            <sc-for list="{{top}}" as="r" hint-placeholder-count="5">
+              <div style="height: 40px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #D6D5CD;">
+                <span style="width: 24px; flex-shrink: 0; color: #4A4A44;">{{r.rank}}</span>
+                <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3;"><span style="font-weight: 600;">{{r.name}}</span><span style="font-size: 11px; color: #5E5E57;">{{r.spec}}</span></span>
+                <span style="width: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; background: {{r.color}};"></span>{{r.cloudCode}}</span>
+                <span style="width: 112px; flex-shrink: 0;">{{r.region}}</span>
+                <span style="width: 52px; flex-shrink: 0; display: flex; justify-content: flex-end;"><span style="padding: 2px 6px; font-weight: 600; background: {{r.valBg}}; color: {{r.valFg}};">{{r.cpu}}</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="flex: 1 1 0; box-sizing: border-box; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; border-right: 1px solid #141414;">
+          <h2 style="margin: 0; height: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; display: flex; align-items: center;">C2&#160;<span style="font-family: 'Noto Sans SC', sans-serif;">30 天内到期</span>&#160;· 12</h2>
+          <div style="display: flex; flex-direction: column;">
+            <sc-for list="{{exp}}" as="e" hint-placeholder-count="4">
+              <div style="height: 54px; box-sizing: border-box; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid #D6D5CD;">
+                <span style="width: 52px; flex-shrink: 0; font-size: 22px; font-weight: 600; color: {{e.dayColor}};">{{e.dayCode}}</span>
+                <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                  <span style="font-size: 13px; font-weight: 600;">{{e.name}}</span>
+                  <span style="font-size: 11px; color: #4A4A44;"><span style="font-family: 'Noto Sans SC', sans-serif;">{{e.type}}</span> · {{e.region}} · {{e.date}}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="flex: 1.25 1 0; box-sizing: border-box; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; background: #141414; color: #ECEBE5;">
+          <h2 style="margin: 0; height: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; display: flex; align-items: center;">C3&#160;<span style="font-family: 'Noto Sans SC', sans-serif;">同步日志</span>&#160;· tail</h2>
+          <div style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
+            <sc-for list="{{logs}}" as="l" hint-placeholder-count="5">
+              <div style="display: flex; gap: 12px; line-height: 1.5;">
+                <span style="width: 64px; flex-shrink: 0; color: #A8A79F;">{{l.time}}</span>
+                <span style="width: 40px; flex-shrink: 0; font-weight: 600; color: {{l.levelColor}};">{{l.level}}</span>
+                <span style="flex-grow: 1; min-width: 0; font-family: 'IBM Plex Mono', 'Noto Sans SC', monospace;">{{l.msg}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #A8A79F;"><span style="width: 8px; height: 14px; background: #ECEBE5;"></span><span style="font-family: 'IBM Plex Mono', 'Noto Sans SC', monospace;">next cron 12:30 · interval 30m</span></div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  pts(vals, x0, x1, y0, y1, max) {
+    var out = [];
+    for (var i = 0; i < vals.length; i++) {
+      out.push([x0 + (x1 - x0) * i / (vals.length - 1), y1 - (y1 - y0) * vals[i] / max]);
+    }
+    return out;
+  }
+  step(p) {
+    var d = 'M' + p[0][0].toFixed(1) + ' ' + p[0][1].toFixed(1);
+    for (var i = 1; i < p.length; i++) {
+      d += ' H' + p[i][0].toFixed(1) + ' V' + p[i][1].toFixed(1);
+    }
+    return d;
+  }
+  renderVals() {
+    var aws = [40, 41, 40, 39, 37, 35, 33, 31, 28, 25, 23, 22, 21, 19, 18, 18, 19, 21, 25, 30, 34, 37, 39, 38];
+    var ali = [47, 48, 48, 46, 44, 42, 40, 37, 34, 31, 28, 26, 24, 23, 22, 21, 22, 25, 31, 37, 42, 45, 47, 46];
+    var AWS = '#1F4FB5', ALI = '#EA6A1F';
+    var regions = [
+      { name: 'cn-hangzhou', aws: false, count: 168 },
+      { name: 'cn-shanghai', aws: false, count: 131 },
+      { name: 'us-east-1', aws: true, count: 104 },
+      { name: 'ap-northeast-1', aws: true, count: 77 },
+      { name: 'cn-beijing', aws: false, count: 69 },
+      { name: 'eu-central-1', aws: true, count: 52 }
+    ].map(function (g) {
+      return { name: g.name, count: g.count, color: g.aws ? AWS : ALI, pct: (g.count / 168 * 100).toFixed(1) };
+    });
+    var top = [
+      { rank: '01', name: 'prod-api-07', aws: false, region: 'cn-hangzhou', spec: 'ecs.c7.2xlarge', cpu: 92.4 },
+      { rank: '02', name: 'order-worker-03', aws: true, region: 'us-east-1', spec: 'c6i.2xlarge', cpu: 88.1 },
+      { rank: '03', name: 'es-data-02', aws: false, region: 'cn-shanghai', spec: 'ecs.r7.4xlarge', cpu: 83.6 },
+      { rank: '04', name: 'ingest-node-11', aws: true, region: 'ap-northeast-1', spec: 'm6i.xlarge', cpu: 79.2 },
+      { rank: '05', name: 'redis-proxy-01', aws: false, region: 'cn-beijing', spec: 'ecs.g7.large', cpu: 74.5 }
+    ].map(function (r) {
+      var hot = r.cpu >= 85;
+      return Object.assign({}, r, {
+        color: r.aws ? AWS : ALI,
+        cloudCode: r.aws ? 'AWS' : 'ALI',
+        valBg: hot ? '#EA6A1F' : 'transparent',
+        valFg: '#141414'
+      });
+    });
+    var exp = [
+      { name: 'prod-mysql-main', type: '数据库', region: 'cn-hangzhou', date: '10-06', days: 8 },
+      { name: 'prod-web-12', type: '云主机', region: 'cn-shanghai', date: '10-11', days: 13 },
+      { name: 'gw-slb-public', type: '负载均衡', region: 'cn-beijing', date: '10-19', days: 21 },
+      { name: 'bi-report-02', type: '云主机', region: 'cn-hangzhou', date: '10-24', days: 26 }
+    ].map(function (e) {
+      return Object.assign({}, e, {
+        dayCode: (e.days < 10 ? '0' : '') + e.days + 'D',
+        dayColor: e.days <= 10 ? '#A94600' : '#141414'
+      });
+    });
+    var logs = [
+      { time: '12:02:14', level: 'OK', msg: 'aws/生产账号 318 项 48s' },
+      { time: '11:58:40', level: 'WARN', msg: 'aliyun/主账号 ap-south-1 lb 采集超时' },
+      { time: '11:55:03', level: 'OK', msg: 'aws/中国区 64 项 12s' },
+      { time: '11:31:22', level: 'OK', msg: 'aliyun/测试账号 97 项 21s' },
+      { time: '11:30:00', level: 'CRON', msg: '定时同步开始 · 6 个账号' }
+    ].map(function (l) {
+      var c = { OK: '#7FD1A0', WARN: '#FF9B55', CRON: '#9DB8F0' };
+      return Object.assign({}, l, { levelColor: c[l.level] });
+    });
+    return {
+      awsStep: this.step(this.pts(aws, 48, 936, 12, 236, 60)),
+      aliStep: this.step(this.pts(ali, 48, 936, 12, 236, 60)),
+      regions: regions,
+      top: top,
+      exp: exp,
+      logs: logs
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AccountForm.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "新增云账号",
+      "w": 1440,
+      "x": 3040,
+      "y": 5680
+    },
+    "Accounts.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "云账号 · 同步历史",
+      "w": 1440,
+      "x": 1520,
+      "y": 5680
+    },
+    "Audit.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "审计日志",
+      "w": 1440,
+      "x": 6080,
+      "y": 5680
+    },
+    "Dashboard.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "概览",
+      "w": 1440,
+      "x": 3040,
+      "y": 4660
+    },
+    "DesignSpec.dc.html": {
+      "h": 900,
+      "title": "03 设计规范",
+      "w": 1440,
+      "x": 0,
+      "y": 3300
+    },
+    "DirA.dc.html": {
+      "h": 900,
+      "title": "方向 A · 深空指挥舱",
+      "w": 1440,
+      "x": 0,
+      "y": 1360
+    },
+    "DirB.dc.html": {
+      "h": 900,
+      "title": "方向 B · 明亮专业",
+      "w": 2773,
+      "x": -62,
+      "y": 1814
+    },
+    "DirC.dc.html": {
+      "h": 900,
+      "title": "方向 C · 工业控制台",
+      "w": 1440,
+      "x": 3040,
+      "y": 1360
+    },
+    "IA.dc.html": {
+      "h": 900,
+      "title": "02 信息架构与核心流程",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Login.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "登录",
+      "w": 1440,
+      "x": 0,
+      "y": 4660
+    },
+    "Main.dc.html": {
+      "h": 900,
+      "title": "01 产品定义",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Monitor.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "监控中心 · 跨云对比",
+      "w": 1440,
+      "x": 0,
+      "y": 5680
+    },
+    "Onboarding.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "首次使用 · 空状态",
+      "w": 1440,
+      "x": 1520,
+      "y": 4660
+    },
+    "ResourceDetail.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "资源详情 · 监控",
+      "w": 1440,
+      "x": 6080,
+      "y": 4660
+    },
+    "Resources.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "资源中心",
+      "w": 1440,
+      "x": 4560,
+      "y": 4660
+    },
+    "Sidebar.dc.html": {
+      "h": 900,
+      "title": "组件 · 侧边导航",
+      "w": 232,
+      "x": 1520,
+      "y": 3300
+    },
+    "Topbar.dc.html": {
+      "h": 64,
+      "title": "组件 · 顶栏",
+      "w": 1208,
+      "x": 1832,
+      "y": 3300
+    },
+    "Users.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "用户管理",
+      "w": 1440,
+      "x": 4560,
+      "y": 5680
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-28T03:37:35Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "chosen": {
+      "fill": "green",
+      "maxH": 110,
+      "size": 24,
+      "text": "已选定：方向 B · 明亮专业。后面的设计规范和全部页面都按这个方向来。",
+      "w": 460,
+      "x": -62,
+      "y": 2760
+    },
+    "row1": {
+      "kind": "title1",
+      "maxW": 2960,
+      "text": "第一步 · 需求与信息架构",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "row2": {
+      "kind": "title1",
+      "maxW": 4480,
+      "text": "第二步 · 视觉方向（概览页，三选一）",
+      "w": 240,
+      "x": 0,
+      "y": 1060
+    },
+    "row3": {
+      "kind": "title1",
+      "maxW": 3040,
+      "text": "第三步 · 设计规范与公共组件",
+      "w": 240,
+      "x": 0,
+      "y": 3000
+    },
+    "row4": {
+      "kind": "title1",
+      "maxW": 7520,
+      "text": "第四步 · 高保真原型（可点击：在任一页面点 Play）",
+      "w": 240,
+      "x": 0,
+      "y": 4360
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "IA.dc.html",
+    "DirA.dc.html",
+    "DirB.dc.html",
+    "DirC.dc.html",
+    "DesignSpec.dc.html",
+    "Sidebar.dc.html",
+    "Topbar.dc.html",
+    "Login.dc.html",
+    "Onboarding.dc.html",
+    "Dashboard.dc.html",
+    "Resources.dc.html",
+    "ResourceDetail.dc.html",
+    "Monitor.dc.html",
+    "Accounts.dc.html",
+    "AccountForm.dc.html",
+    "Users.dc.html",
+    "Audit.dc.html"
+  ],
+  "pages": [],
+  "title": "云运维聚合平台 原型"
+}

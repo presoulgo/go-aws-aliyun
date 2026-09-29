@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>新增云账号</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;font-family:'IBM Plex Sans','Noto Sans SC','PingFang SC',sans-serif;color:#151821}
+a{color:#2443B5}a:hover{color:#18318C}
+input::placeholder{color:#8A91A0}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; box-sizing: border-box; display: flex; background: #F4F5F7; color: #151821; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; overflow: hidden;">
+  <dc-import name="Sidebar" active="accounts" hint-size="232px,900px"></dc-import>
+  <div style="width: 1208px; flex-shrink: 0; display: flex; flex-direction: column;">
+    <dc-import name="Topbar" hint-size="1208px,64px"></dc-import>
+    <main aria-hidden="true" style="height: 836px; box-sizing: border-box; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="height: 44px; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
+        <span style="font-size: 22px; font-weight: 600;">云账号</span>
+        <span style="font-size: 13px; color: #555C6B;">6 个账号 · 5 个同步正常 · 1 个需要关注</span>
+      </div>
+      <div style="height: 406px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF;"></div>
+      <div style="flex-grow: 1; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF;"></div>
+    </main>
+  </div>
+
+  <div style="position: absolute; left: 0; top: 0; width: 1440px; height: 900px; display: flex; align-items: center; justify-content: center; background: rgba(21, 24, 33, 0.42);">
+    <div role="dialog" aria-label="新增云账号" style="width: 840px; box-sizing: border-box; display: flex; flex-direction: column; border-radius: 14px; background: #FFFFFF; box-shadow: 0 24px 60px rgba(21, 24, 33, 0.25);">
+
+      <div style="height: 64px; box-sizing: border-box; padding: 0 24px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #EEF0F3;">
+        <h2 style="margin: 0; font-size: 18px; font-weight: 600;">新增云账号</h2>
+        <ol aria-label="步骤" style="margin: 0 0 0 auto; padding: 0; list-style: none; display: flex; align-items: center; gap: 8px; font-size: 13px;">
+          <sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+            <li style="display: flex; align-items: center; gap: 8px; color: {{s.fg}};">
+              <span style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; background: {{s.dotBg}}; color: {{s.dotFg}};">{{s.mark}}</span>
+              {{s.label}}
+              <sc-if value="{{s.hasLine}}" hint-placeholder-val="{{true}}"><span style="width: 24px; height: 1px; background: #D5D9E0;"></span></sc-if>
+            </li>
+          </sc-for>
+        </ol>
+        <a href="Accounts.dc.html" aria-label="关闭" style="margin-left: 8px; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #3F4654;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+      </div>
+
+      <form style="box-sizing: border-box; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 13px; font-weight: 500; color: #3F4654;">云厂商</span>
+          <div role="radiogroup" aria-label="云厂商" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+            <sc-for list="{{providers}}" as="p" hint-placeholder-count="2">
+              <button type="button" role="radio" aria-checked="{{p.on}}" onClick="{{p.pick}}" style="height: 60px; box-sizing: border-box; padding: 0 16px; display: flex; align-items: center; gap: 12px; border-radius: 10px; font-family: inherit; text-align: left; cursor: pointer; border: {{p.border}}; background: {{p.bg}};">
+                <span style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background: {{p.logoBg}}; color: {{p.logoFg}};">{{p.short}}</span>
+                <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600; color: #151821;">{{p.label}}</span><span style="font-size: 12px; color: #555C6B;">{{p.desc}}</span></span>
+                <span style="width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: {{p.ring}};"></span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #3F4654;">
+            账号名称
+            <input type="text" placeholder="{{namePh}}" style="height: 38px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: inherit; font-size: 13px; font-weight: 400;">
+          </label>
+          <sc-if value="{{isAws}}" hint-placeholder-val="{{true}}">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 500; color: #3F4654;">分区</span>
+              <div style="display: flex; gap: 2px; padding: 3px; border-radius: 9px; background: #E9EBEF; align-self: flex-start;">
+                <sc-for list="{{partitions}}" as="pt" hint-placeholder-count="2">
+                  <button type="button" aria-pressed="{{pt.on}}" onClick="{{pt.pick}}" style="height: 30px; padding: 0 14px; border: 0; border-radius: 6px; font-family: inherit; font-size: 13px; cursor: pointer; background: {{pt.bg}}; color: {{pt.fg}}; font-weight: {{pt.fw}};">{{pt.label}}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{isAli}}" hint-placeholder-val="{{false}}">
+            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #3F4654;">
+              备注（可选）
+              <input type="text" placeholder="例如：视频业务线，负责人 ops" style="height: 38px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: inherit; font-size: 13px; font-weight: 400;">
+            </label>
+          </sc-if>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #3F4654;">
+            AccessKey ID
+            <input type="text" autocomplete="off" placeholder="{{akPh}}" style="height: 38px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 400;">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #3F4654;">
+            <span>AccessKey Secret <span style="font-weight: 400; color: #6B7280;">· AES-256-GCM 加密存储，保存后不再显示</span></span>
+            <input type="password" autocomplete="off" placeholder="输入后加密保存" style="height: 38px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 400;">
+          </label>
+        </div>
+
+        <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #3F4654;">
+          <span>角色 ARN <span style="font-weight: 400; color: #6B7280;">（可选：用上面的 AK 扮演该角色访问成员账号）</span></span>
+          <input type="text" placeholder="{{rolePh}}" style="height: 38px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 400;">
+        </label>
+
+        <sc-if value="{{tested}}" hint-placeholder-val="{{false}}">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; background: #E9F6EF; border: 1px solid #BFE3CE; font-size: 13px; color: #11643A;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16804A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l2.7 2.7L16.5 9.5"></path></svg>
+              <span>连接成功 · 云账号 UID <span style="font-family: 'IBM Plex Mono', monospace;">{{result.uid}}</span> · 发现 {{result.count}} 个已开通地域</span>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 13px; font-weight: 500; color: #3F4654;">同步地域 <span style="font-weight: 400; color: #6B7280;">{{regionSummary}}</span></span>
+              <button type="button" onClick="{{selectAll}}" style="height: 28px; padding: 0 8px; border: 0; background: transparent; color: #2443B5; font-family: inherit; font-size: 12px; cursor: pointer;">{{selectAllLabel}}</button>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <sc-for list="{{regions}}" as="r" hint-placeholder-count="12">
+                <button type="button" role="checkbox" aria-checked="{{r.on}}" onClick="{{r.toggle}}" style="height: 32px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 7px; font-family: inherit; font-size: 12px; cursor: pointer; border: 1px solid {{r.border}}; background: {{r.bg}}; color: {{r.fg}};">
+                  <span style="width: 14px; height: 14px; box-sizing: border-box; border-radius: 4px; display: flex; align-items: center; justify-content: center; border: 1.5px solid {{r.boxBorder}}; background: {{r.boxBg}};"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></span>
+                  <span style="font-family: 'IBM Plex Mono', monospace;">{{r.code}}</span>
+                  <span style="color: #6B7280;">{{r.name}}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{notTested}}" hint-placeholder-val="{{true}}">
+          <div style="height: 56px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px dashed #C9CED6; border-radius: 8px; font-size: 13px; color: #6B7280;">{{placeholderText}}</div>
+        </sc-if>
+      </form>
+
+      <div style="height: 68px; box-sizing: border-box; padding: 0 24px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #EEF0F3;">
+        <span style="font-size: 12px; color: #6B7280;">保存后立即同步一次，之后每 30 分钟自动同步</span>
+        <a href="Accounts.dc.html" style="margin-left: auto; height: 36px; box-sizing: border-box; padding: 0 16px; display: flex; align-items: center; border: 1px solid #D5D9E0; border-radius: 8px; color: #151821; font-size: 13px; text-decoration: none;">取消</a>
+        <button type="button" onClick="{{runTest}}" style="height: 36px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border: 1px solid #2443B5; border-radius: 8px; background: #FFFFFF; color: #2443B5; font-family: inherit; font-size: 13px; cursor: pointer;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h3l2-5 4 10 2-5h5"></path></svg>
+          {{testLabel}}
+        </button>
+        <sc-if value="{{tested}}" hint-placeholder-val="{{false}}">
+          <a href="Accounts.dc.html" style="height: 36px; padding: 0 16px; display: flex; align-items: center; border-radius: 8px; background: #2443B5; color: #FFFFFF; font-size: 13px; font-weight: 500; text-decoration: none;">保存并同步</a>
+        </sc-if>
+        <sc-if value="{{notTested}}" hint-placeholder-val="{{true}}">
+          <button type="button" disabled title="请先测试连接" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #C9D1EE; color: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 500;">保存并同步</button>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var provider = st.provider || 'aws';
+    var partition = st.partition || 'global';
+    var tested = !!st.tested;
+    var testing = !!st.testing;
+    var isAws = provider === 'aws';
+
+    var regionSets = {
+      global: [['us-east-1', '弗吉尼亚北部'], ['us-east-2', '俄亥俄'], ['us-west-1', '加利福尼亚北部'], ['us-west-2', '俄勒冈'], ['ap-northeast-1', '东京'], ['ap-northeast-2', '首尔'], ['ap-northeast-3', '大阪'], ['ap-southeast-1', '新加坡'], ['ap-southeast-2', '悉尼'], ['ap-south-1', '孟买'], ['eu-central-1', '法兰克福'], ['eu-west-1', '爱尔兰'], ['eu-west-2', '伦敦'], ['eu-west-3', '巴黎'], ['eu-north-1', '斯德哥尔摩'], ['ca-central-1', '加拿大中部'], ['sa-east-1', '圣保罗']],
+      china: [['cn-north-1', '北京'], ['cn-northwest-1', '宁夏']],
+      aliyun: [['cn-hangzhou', '华东1 杭州'], ['cn-shanghai', '华东2 上海'], ['cn-beijing', '华北2 北京'], ['cn-zhangjiakou', '华北3 张家口'], ['cn-shenzhen', '华南1 深圳'], ['cn-guangzhou', '华南3 广州'], ['cn-chengdu', '西南1 成都'], ['cn-hongkong', '中国香港'], ['ap-southeast-1', '新加坡'], ['ap-northeast-1', '东京'], ['ap-southeast-5', '雅加达'], ['us-west-1', '硅谷'], ['us-east-1', '弗吉尼亚'], ['eu-central-1', '法兰克福']]
+    };
+    var setKey = isAws ? partition : 'aliyun';
+    var all = regionSets[setKey];
+    var picked = st.picked && st.pickedSet === setKey ? st.picked : null; // null = all regions
+    var isOn = function (code) { return picked === null || picked.indexOf(code) >= 0; };
+
+    var providers = [
+      { key: 'aws', label: 'AWS', short: 'AWS', desc: 'IAM 用户 AccessKey，支持中国区', logoBg: '#E6ECF5', logoFg: '#1B2F52' },
+      { key: 'aliyun', label: '阿里云', short: '阿里', desc: 'RAM 用户 AccessKey，支持 RAM 角色', logoBg: '#FDEEE2', logoFg: '#A94600' }
+    ].map(function (p) {
+      var on = p.key === provider;
+      return Object.assign({}, p, {
+        on: on ? 'true' : 'false',
+        border: on ? '1.5px solid #2443B5' : '1px solid #D5D9E0',
+        bg: on ? '#F5F7FE' : '#FFFFFF',
+        ring: on ? '5px solid #2443B5' : '1.5px solid #AEB7C6',
+        pick: function () { self.setState({ provider: p.key, tested: false, testing: false, picked: null }); }
+      });
+    });
+    var partitions = [
+      { key: 'global', label: '全球区' },
+      { key: 'china', label: '中国区' }
+    ].map(function (p) {
+      var on = p.key === partition;
+      return {
+        label: p.label, on: on ? 'true' : 'false',
+        bg: on ? '#FFFFFF' : 'transparent', fg: on ? '#151821' : '#555C6B', fw: on ? '500' : '400',
+        pick: function () { self.setState({ partition: p.key, tested: false, testing: false, picked: null }); }
+      };
+    });
+
+    var regions = all.map(function (r) {
+      var on = isOn(r[0]);
+      return {
+        code: r[0], name: r[1], on: on ? 'true' : 'false',
+        border: on ? '#AFC0F0' : '#DDE1E7',
+        bg: on ? '#F5F7FE' : '#FFFFFF',
+        fg: on ? '#151821' : '#555C6B',
+        boxBorder: on ? '#2443B5' : '#AEB7C6',
+        boxBg: on ? '#2443B5' : '#FFFFFF',
+        toggle: function () {
+          var cur = picked === null ? all.map(function (x) { return x[0]; }) : picked.slice();
+          var i = cur.indexOf(r[0]);
+          if (i >= 0) cur.splice(i, 1); else cur.push(r[0]);
+          self.setState({ picked: cur.length === all.length ? null : cur, pickedSet: setKey });
+        }
+      };
+    });
+    var count = picked === null ? all.length : picked.length;
+
+    var steps = [
+      { label: '填写凭证', state: tested ? 'done' : 'active' },
+      { label: '测试连接', state: tested ? 'done' : (testing ? 'active' : 'todo') },
+      { label: '选择地域', state: tested ? 'active' : 'todo' }
+    ].map(function (s, i, arr) {
+      return {
+        label: s.label,
+        mark: s.state === 'done' ? '✓' : String(i + 1),
+        dotBg: s.state === 'todo' ? '#EEF0F3' : (s.state === 'done' ? '#E9F6EF' : '#2443B5'),
+        dotFg: s.state === 'todo' ? '#6B7280' : (s.state === 'done' ? '#16804A' : '#FFFFFF'),
+        fg: s.state === 'todo' ? '#6B7280' : '#151821',
+        hasLine: i < arr.length - 1
+      };
+    });
+
+    return {
+      steps: steps,
+      providers: providers,
+      partitions: partitions,
+      isAws: isAws,
+      isAli: !isAws,
+      namePh: isAws ? '例如：AWS 海外电商' : '例如：阿里云 视频业务',
+      akPh: isAws ? 'AKIA 开头，20 位' : 'LTAI 开头',
+      rolePh: isAws ? 'arn:aws:iam::123456789012:role/OpsReadOnly' : 'acs:ram::1234567890123456:role/ops-readonly',
+      tested: tested,
+      notTested: !tested,
+      placeholderText: testing ? '正在通过 STS 校验凭证并获取地域列表…' : '测试连接成功后，这里会列出账号已开通的地域，默认全部同步',
+      result: { uid: isAws ? (partition === 'china' ? '0925-6671-2208' : '3318-5520-7746') : '1604••••7713', count: all.length },
+      regions: regions,
+      regionSummary: picked === null ? '· 全部 ' + all.length + ' 个（新开通的地域也会自动纳入）' : '· 已选 ' + count + ' / ' + all.length + ' 个',
+      selectAllLabel: picked === null ? '全部已选' : '全选',
+      selectAll: function () { self.setState({ picked: null, pickedSet: setKey }); },
+      testLabel: testing ? '测试中…' : (tested ? '重新测试' : '测试连接'),
+      runTest: function () {
+        self.setState({ testing: true, tested: false });
+        setTimeout(function () { self.setState({ testing: false, tested: true }); }, 900);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

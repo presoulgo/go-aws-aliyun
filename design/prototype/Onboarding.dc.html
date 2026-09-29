@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>首次使用</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;font-family:'IBM Plex Sans','Noto Sans SC','PingFang SC',sans-serif;color:#151821}
+a{color:#2443B5}a:hover{color:#18318C}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; background: #F4F5F7; color: #151821; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif;">
+  <dc-import name="Sidebar" active="dashboard" hint-size="232px,900px"></dc-import>
+  <div style="width: 1208px; flex-shrink: 0; display: flex; flex-direction: column;">
+    <dc-import name="Topbar" hint-size="1208px,64px"></dc-import>
+    <main style="height: 836px; box-sizing: border-box; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="height: 44px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 600;">概览</h1>
+        <span style="font-size: 13px; color: #555C6B;">还没有纳管任何云账号</span>
+      </div>
+
+      <section style="height: 300px; flex-shrink: 0; box-sizing: border-box; padding: 36px 48px; display: flex; align-items: center; gap: 56px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF;">
+        <svg width="300" height="220" viewBox="0 0 300 220" fill="none" aria-hidden="true" style="flex-shrink: 0;">
+          <path d="M70 60 C 110 60, 120 110, 150 110" stroke="#C9D1EE" stroke-width="2" stroke-dasharray="5 5"></path>
+          <path d="M230 60 C 190 60, 180 110, 150 110" stroke="#C9D1EE" stroke-width="2" stroke-dasharray="5 5"></path>
+          <path d="M150 110 V 170" stroke="#C9D1EE" stroke-width="2"></path>
+          <rect x="16" y="32" width="96" height="56" rx="12" fill="#E6ECF5"></rect>
+          <text x="64" y="66" text-anchor="middle" font-size="15" font-weight="600" fill="#1B2F52" font-family="IBM Plex Sans, sans-serif">AWS</text>
+          <rect x="188" y="32" width="96" height="56" rx="12" fill="#FDEEE2"></rect>
+          <text x="236" y="66" text-anchor="middle" font-size="15" font-weight="600" fill="#A94600" font-family="Noto Sans SC, sans-serif">阿里云</text>
+          <path d="M150 84l22.5 13v26L150 136l-22.5-13V97z" fill="#2443B5"></path>
+          <path d="M150 110V84M150 110l22.5 13M150 110l-22.5 13" stroke="#FFFFFF" stroke-width="1.6"></path>
+          <rect x="86" y="170" width="128" height="36" rx="8" fill="#FFFFFF" stroke="#E4E7EC"></rect>
+          <rect x="98" y="182" width="12" height="12" rx="3" fill="#E9F6EF"></rect>
+          <rect x="118" y="184" width="80" height="8" rx="4" fill="#EEF0F3"></rect>
+        </svg>
+        <div style="display: flex; flex-direction: column; gap: 14px; max-width: 560px;">
+          <h2 style="margin: 0; font-size: 24px; font-weight: 600;">接入第一个云账号</h2>
+          <p style="margin: 0; font-size: 15px; line-height: 1.75; color: #3F4654;">平台只需要只读权限。填写 AccessKey 后会自动校验凭证、发现可用地域并同步资源，同步完成就能在资源中心按名称、ID、IP 检索。</p>
+          <div style="display: flex; gap: 12px; margin-top: 6px;">
+            <a href="AccountForm.dc.html" style="height: 40px; padding: 0 18px; display: flex; align-items: center; gap: 8px; border-radius: 8px; background: #2443B5; color: #FFFFFF; font-size: 14px; font-weight: 500; text-decoration: none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+              新增云账号
+            </a>
+            <a href="Dashboard.dc.html" style="height: 40px; box-sizing: border-box; padding: 0 18px; display: flex; align-items: center; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-size: 14px; text-decoration: none;">查看有数据时的样子</a>
+          </div>
+        </div>
+      </section>
+
+      <div style="height: 118px; flex-shrink: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;">
+        <div style="box-sizing: border-box; padding: 18px 20px; display: flex; gap: 14px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF;">
+          <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; background: #EDF1FD; color: #2443B5; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;">1</span>
+          <div style="display: flex; flex-direction: column; gap: 6px;"><strong style="font-size: 14px;">创建只读 AccessKey</strong><span style="font-size: 13px; line-height: 1.6; color: #555C6B;">在 AWS IAM 或阿里云 RAM 创建专用子账号，只授予右下方的只读策略</span></div>
+        </div>
+        <div style="box-sizing: border-box; padding: 18px 20px; display: flex; gap: 14px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF;">
+          <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; background: #EDF1FD; color: #2443B5; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;">2</span>
+          <div style="display: flex; flex-direction: column; gap: 6px;"><strong style="font-size: 14px;">测试连接并选择地域</strong><span style="font-size: 13px; line-height: 1.6; color: #555C6B;">平台通过 STS 校验凭证，列出已开通地域，默认全部同步</span></div>
+        </div>
+        <div style="box-sizing: border-box; padding: 18px 20px; display: flex; gap: 14px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF;">
+          <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; background: #EDF1FD; color: #2443B5; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;">3</span>
+          <div style="display: flex; flex-direction: column; gap: 6px;"><strong style="font-size: 14px;">自动同步资源</strong><span style="font-size: 13px; line-height: 1.6; color: #555C6B;">保存后立即同步一次，之后每 30 分钟自动更新，也可随时手动同步</span></div>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+        <section style="box-sizing: border-box; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF;">
+          <div style="display: flex; align-items: center; gap: 10px;"><span style="padding: 1px 7px; border-radius: 5px; background: #E6ECF5; color: #1B2F52; font-size: 12px;">AWS</span><h3 style="margin: 0; font-size: 15px; font-weight: 600;">所需权限（IAM 策略）</h3></div>
+          <p style="margin: 0; font-size: 13px; color: #555C6B;">直接使用托管策略 ReadOnlyAccess，或只授予以下动作：</p>
+          <div style="flex-grow: 1; box-sizing: border-box; padding: 12px 14px; border-radius: 8px; background: #F7F8FA; border: 1px solid #EEF0F3; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.8; color: #151821; display: flex; flex-direction: column;">
+            <span>sts:GetCallerIdentity</span>
+            <span>ec2:DescribeRegions, ec2:DescribeInstances</span>
+            <span>rds:DescribeDBInstances</span>
+            <span>elasticloadbalancing:Describe*</span>
+            <span>s3:ListAllMyBuckets, s3:GetBucketLocation</span>
+            <span>cloudwatch:GetMetricData, cloudwatch:ListMetrics</span>
+          </div>
+        </section>
+        <section style="box-sizing: border-box; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF;">
+          <div style="display: flex; align-items: center; gap: 10px;"><span style="padding: 1px 7px; border-radius: 5px; background: #FDEEE2; color: #A94600; font-size: 12px;">阿里云</span><h3 style="margin: 0; font-size: 15px; font-weight: 600;">所需权限（RAM 系统策略）</h3></div>
+          <p style="margin: 0; font-size: 13px; color: #555C6B;">给 RAM 用户授予以下只读系统策略：</p>
+          <div style="flex-grow: 1; box-sizing: border-box; padding: 12px 14px; border-radius: 8px; background: #F7F8FA; border: 1px solid #EEF0F3; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.8; color: #151821; display: flex; flex-direction: column;">
+            <span>AliyunECSReadOnlyAccess</span>
+            <span>AliyunRDSReadOnlyAccess</span>
+            <span>AliyunSLBReadOnlyAccess</span>
+            <span>AliyunALBReadOnlyAccess</span>
+            <span>AliyunOSSReadOnlyAccess</span>
+            <span>AliyunCloudMonitorReadOnlyAccess</span>
+          </div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

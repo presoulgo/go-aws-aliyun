@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>用户管理</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;font-family:'IBM Plex Sans','Noto Sans SC','PingFang SC',sans-serif;color:#151821}
+a{color:#2443B5}a:hover{color:#18318C}
+input::placeholder{color:#8A91A0}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; box-sizing: border-box; display: flex; background: #F4F5F7; color: #151821; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif; overflow: hidden;">
+  <dc-import name="Sidebar" active="users" hint-size="232px,900px"></dc-import>
+  <div style="width: 1208px; flex-shrink: 0; display: flex; flex-direction: column;">
+    <dc-import name="Topbar" hint-size="1208px,64px"></dc-import>
+    <main style="height: 836px; box-sizing: border-box; padding: 24px 28px; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="height: 44px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-size: 22px; font-weight: 600;">用户管理</h1>
+          <span style="font-size: 13px; color: #555C6B;">{{summary}}</span>
+        </div>
+        <button type="button" onClick="{{openNew}}" style="height: 38px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 8px; background: #2443B5; color: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          新增用户
+        </button>
+      </div>
+
+      <div style="flex-shrink: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;">
+        <div style="box-sizing: border-box; padding: 14px 18px; display: flex; align-items: center; gap: 14px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF;">
+          <span style="padding: 2px 8px; border-radius: 5px; font-size: 12px; background: #EDF1FD; color: #2443B5;">管理员</span>
+          <span style="font-size: 13px; color: #3F4654;">纳管和编辑云账号、触发同步、管理用户、查看审计日志</span>
+        </div>
+        <div style="box-sizing: border-box; padding: 14px 18px; display: flex; align-items: center; gap: 14px; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF;">
+          <span style="padding: 2px 8px; border-radius: 5px; font-size: 12px; background: #F1F3F7; color: #3F4654;">只读</span>
+          <span style="font-size: 13px; color: #3F4654;">查看概览、资源清单和监控；不能修改任何配置</span>
+        </div>
+      </div>
+
+      <section style="flex-grow: 1; box-sizing: border-box; display: flex; flex-direction: column; border: 1px solid #E4E7EC; border-radius: 12px; background: #FFFFFF; overflow: hidden;">
+        <div style="height: 44px; flex-shrink: 0; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 110px 150px 200px 130px 250px; column-gap: 12px; align-items: center; background: #F7F8FA; border-bottom: 1px solid #EEF0F3; font-size: 12px; color: #555C6B;">
+          <span>用户</span><span>角色</span><span>状态</span><span>最近登录</span><span>创建时间</span><span>操作</span>
+        </div>
+        <sc-for list="{{users}}" as="u" hint-placeholder-count="6">
+          <div style="height: 64px; box-sizing: border-box; padding: 0 20px; display: grid; grid-template-columns: minmax(0, 1fr) 110px 150px 200px 130px 250px; column-gap: 12px; align-items: center; border-bottom: 1px solid #EEF0F3; font-size: 13px; opacity: {{u.opacity}};">
+            <span style="display: flex; align-items: center; gap: 12px;">
+              <span style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; background: {{u.avBg}}; color: {{u.avFg}};">{{u.initial}}</span>
+              <span style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="display: flex; align-items: center; gap: 8px;"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 500;">{{u.username}}</span><sc-if value="{{u.me}}" hint-placeholder-val="{{false}}"><span style="padding: 0 6px; border-radius: 4px; font-size: 11px; line-height: 18px; background: #E9F6EF; color: #16804A;">当前登录</span></sc-if></span>
+                <span style="font-size: 12px; color: #6B7280;">{{u.display}}</span>
+              </span>
+            </span>
+            <span style="justify-self: start; padding: 2px 8px; border-radius: 5px; font-size: 12px; background: {{u.roleBg}}; color: {{u.roleFg}};">{{u.roleLabel}}</span>
+            <span style="justify-self: start; display: flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: {{u.stBg}}; color: {{u.stFg}};"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{u.stDot}};"></span>{{u.stLabel}}</span>
+            <span style="display: flex; flex-direction: column; gap: 2px;"><span>{{u.last}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7280;">{{u.ip}}</span></span>
+            <span style="font-size: 12px; color: #555C6B;">{{u.created}}</span>
+            <span style="display: flex; align-items: center; gap: 2px;">
+              <button type="button" style="height: 30px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: #2443B5; font-family: inherit; font-size: 13px; cursor: pointer;">编辑</button>
+              <button type="button" style="height: 30px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: #2443B5; font-family: inherit; font-size: 13px; cursor: pointer;">重置密码</button>
+              <button type="button" onClick="{{u.toggle}}" disabled="{{u.me}}" style="height: 30px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; font-family: inherit; font-size: 13px; cursor: pointer; color: {{u.toggleColor}};">{{u.toggleLabel}}</button>
+              <button type="button" disabled="{{u.me}}" style="height: 30px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; font-family: inherit; font-size: 13px; cursor: pointer; color: {{u.delColor}};">删除</button>
+            </span>
+          </div>
+        </sc-for>
+      </section>
+
+    </main>
+  </div>
+
+  <sc-if value="{{newOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position: absolute; left: 0; top: 0; width: 1440px; height: 900px; display: flex; align-items: center; justify-content: center; background: rgba(21, 24, 33, 0.42);">
+      <div role="dialog" aria-label="新增用户" style="width: 520px; box-sizing: border-box; display: flex; flex-direction: column; border-radius: 14px; background: #FFFFFF; box-shadow: 0 24px 60px rgba(21, 24, 33, 0.25);">
+        <div style="height: 60px; box-sizing: border-box; padding: 0 24px; display: flex; align-items: center; border-bottom: 1px solid #EEF0F3;">
+          <h2 style="margin: 0; font-size: 17px; font-weight: 600;">新增用户</h2>
+          <button type="button" onClick="{{closeNew}}" aria-label="关闭" style="margin-left: auto; width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: #3F4654; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+        </div>
+        <form style="box-sizing: border-box; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #3F4654;">
+              用户名
+              <input type="text" placeholder="字母、数字、点，例如 li.ming" style="height: 38px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; color: #151821; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 400;">
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 500; color: #3F4654;">
+              显示名称
+              <input type="text" placeholder="例如：数据组 李明" style="height: 38px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; color: #151821; font-family: inherit; font-size: 13px; font-weight: 400;">
+            </label>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label for="new-user-pw" style="font-size: 13px; font-weight: 500; color: #3F4654;">初始密码</label>
+            <div style="display: flex; gap: 8px;">
+              <input id="new-user-pw" type="text" placeholder="{{pwPlaceholder}}" style="flex-grow: 1; height: 38px; box-sizing: border-box; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; color: #151821; font-family: 'IBM Plex Mono', monospace; font-size: 13px;">
+              <button type="button" onClick="{{genPw}}" style="height: 38px; padding: 0 12px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: inherit; font-size: 13px; cursor: pointer;">随机生成</button>
+            </div>
+            <span style="font-size: 12px; color: #6B7280;">至少 10 位，包含字母和数字；把密码私下发给对方，首次登录后提醒修改</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <span style="font-size: 13px; font-weight: 500; color: #3F4654;">角色</span>
+            <div role="radiogroup" aria-label="角色" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+              <sc-for list="{{roles}}" as="r" hint-placeholder-count="2">
+                <button type="button" role="radio" aria-checked="{{r.on}}" onClick="{{r.pick}}" style="box-sizing: border-box; padding: 12px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; border-radius: 10px; font-family: inherit; text-align: left; cursor: pointer; border: {{r.border}}; background: {{r.bg}};">
+                  <span style="font-size: 14px; font-weight: 600; color: #151821;">{{r.label}}</span>
+                  <span style="font-size: 12px; line-height: 1.5; color: #555C6B;">{{r.desc}}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </form>
+        <div style="height: 64px; box-sizing: border-box; padding: 0 24px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; border-top: 1px solid #EEF0F3;">
+          <button type="button" onClick="{{closeNew}}" style="height: 36px; padding: 0 16px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: inherit; font-size: 13px; cursor: pointer;">取消</button>
+          <button type="button" onClick="{{closeNew}}" style="height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #2443B5; color: #FFFFFF; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;">创建用户</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = this.state || {};
+    var disabledMap = st.disabledMap || { 5: true };
+    var role = st.role || 'viewer';
+
+    var base = [
+      { username: 'admin', display: '系统管理员', admin: true, last: '今天 09:12', ip: '10.0.8.21', created: '2026-06-02', me: true },
+      { username: 'ops.lead', display: '运维负责人', admin: true, last: '今天 08:47', ip: '10.0.8.35', created: '2026-06-03' },
+      { username: 'sre.oncall', display: '值班 SRE', admin: false, last: '今天 11:40', ip: '10.0.9.114', created: '2026-06-10' },
+      { username: 'dev.backend', display: '后端研发', admin: false, last: '昨天 19:05', ip: '10.0.12.7', created: '2026-07-01', warn: '今天 2 次登录失败' },
+      { username: 'qa.viewer', display: '测试同学', admin: false, last: '从未登录', ip: '', created: '2026-09-28' },
+      { username: 'intern.temp', display: '实习生', admin: false, last: '2026-09-12 17:02', ip: '10.0.14.60', created: '2026-08-20' }
+    ];
+    var users = base.map(function (u, i) {
+      var off = !!disabledMap[i];
+      var stLabel = off ? '已禁用' : (u.warn ? u.warn : '正常');
+      return Object.assign({}, u, {
+        me: !!u.me,
+        initial: u.username.charAt(0).toUpperCase(),
+        avBg: u.admin ? '#DDE4F8' : '#EEF0F3',
+        avFg: u.admin ? '#2443B5' : '#3F4654',
+        roleLabel: u.admin ? '管理员' : '只读',
+        roleBg: u.admin ? '#EDF1FD' : '#F1F3F7',
+        roleFg: u.admin ? '#2443B5' : '#3F4654',
+        stLabel: stLabel,
+        stBg: off ? '#F1F3F7' : (u.warn ? '#FFF1DC' : '#E9F6EF'),
+        stFg: off ? '#3F4654' : (u.warn ? '#8A4B00' : '#16804A'),
+        stDot: off ? '#9AA1AD' : (u.warn ? '#E08A00' : '#1F9D5B'),
+        opacity: off ? '0.72' : '1',
+        toggleLabel: off ? '启用' : '禁用',
+        toggleColor: u.me ? '#B5BBC6' : '#2443B5',
+        delColor: u.me ? '#B5BBC6' : '#B42318',
+        toggle: function () { var d = Object.assign({}, disabledMap); d[i] = !off; self.setState({ disabledMap: d }); }
+      });
+    });
+    var disabledCount = users.filter(function (u) { return u.stLabel === '已禁用'; }).length;
+
+    var roles = [
+      { key: 'admin', label: '管理员', desc: '可纳管云账号、触发同步、管理用户' },
+      { key: 'viewer', label: '只读', desc: '只能查看概览、资源和监控' }
+    ].map(function (r) {
+      var on = r.key === role;
+      return Object.assign({}, r, {
+        on: on ? 'true' : 'false',
+        border: on ? '1.5px solid #2443B5' : '1px solid #D5D9E0',
+        bg: on ? '#F5F7FE' : '#FFFFFF',
+        pick: function () { self.setState({ role: r.key }); }
+      });
+    });
+
+    return {
+      summary: '6 个用户 · 2 个管理员 · 4 个只读 · ' + disabledCount + ' 个已禁用',
+      users: users,
+      roles: roles,
+      newOpen: !!st.newOpen,
+      openNew: function () { self.setState({ newOpen: true }); },
+      closeNew: function () { self.setState({ newOpen: false, genPw: false }); },
+      pwPlaceholder: st.genPw ? '已生成：Kx7pQ2m9vLtR' : '输入初始密码，或点右侧随机生成',
+      genPw: function () { self.setState({ genPw: true }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+# Build output
+/bin/
+/dist/
+
+# Runtime data (database, generated keys)
+/data/
+*.db
+*.db-shm
+*.db-wal
+*.key
+
+# Local config (copy configs/config.example.yaml)
+/configs/config.yaml
+
+# Frontend
+web/node_modules/
+web/dist/*
+!web/dist/.gitkeep
+web/.vite/
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Test artifacts
+coverage.out
+/screenshots/

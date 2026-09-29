@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>登录</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7;font-family:'IBM Plex Sans','Noto Sans SC','PingFang SC',sans-serif;color:#151821}
+a{color:#2443B5}a:hover{color:#18318C}
+input::placeholder{color:#8A91A0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; display: flex; background: #FFFFFF; color: #151821; font-family: 'IBM Plex Sans', 'Noto Sans SC', 'PingFang SC', sans-serif;">
+
+  <section style="position: relative; width: 640px; flex-shrink: 0; box-sizing: border-box; padding: 56px 64px; display: flex; flex-direction: column; background: #2443B5; color: #FFFFFF; overflow: hidden;">
+    <svg width="520" height="520" viewBox="0 0 520 520" fill="none" stroke="#FFFFFF" stroke-opacity="0.09" stroke-width="1.5" aria-hidden="true" style="position: absolute; right: -150px; bottom: -130px;">
+      <path d="M260 20l207.8 120v240L260 500 52.2 380V140z"></path>
+      <path d="M260 80l155.9 90v180L260 440 104.1 350V170z"></path>
+      <path d="M260 140l103.9 60v120L260 380 156.1 320V200z"></path>
+      <path d="M260 200l51.9 30v60L260 320l-51.9-30v-60z"></path>
+      <path d="M260 20v180M467.8 140L311.9 230M467.8 380L311.9 290M260 500V320M52.2 380l155.9-90M52.2 140l155.9 90"></path>
+    </svg>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="width: 40px; height: 40px; border-radius: 11px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2443B5" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"></path><path d="M12 12V2.5M12 12l8.2 4.75M12 12l-8.2 4.75"></path></svg>
+      </span>
+      <span style="display: flex; flex-direction: column; line-height: 1.25;"><strong style="font-size: 20px;">云枢</strong><span style="font-size: 12px; color: #C9D3F5;">多云运维聚合平台</span></span>
+    </div>
+    <div style="margin-top: 150px; display: flex; flex-direction: column; gap: 18px; position: relative;">
+      <h1 style="margin: 0; font-size: 38px; line-height: 1.3; font-weight: 600;">AWS 与阿里云，<br>一个视图看全</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 1.7; color: #DCE3FA; max-width: 440px;">把多个账号、多个地域的资源和监控收拢到一起，排查问题不用再在两个控制台之间来回切换。</p>
+    </div>
+    <ul style="margin: 44px 0 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 16px; position: relative;">
+      <li style="display: flex; align-items: center; gap: 12px; font-size: 15px;"><span style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px; background: #3553C4; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="17" height="7" rx="1.5"></rect><rect x="3.5" y="13" width="17" height="7" rx="1.5"></rect></svg></span>统一资源清单：云主机、数据库、负载均衡、对象存储</li>
+      <li style="display: flex; align-items: center; gap: 12px; font-size: 15px;"><span style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px; background: #3553C4; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"></path></svg></span>监控聚合：CloudWatch 与云监控曲线同屏对比</li>
+      <li style="display: flex; align-items: center; gap: 12px; font-size: 15px;"><span style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px; background: #3553C4; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9.5" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>安全接入：只读 AK 加密存储，关键操作全程审计</li>
+    </ul>
+    <span style="margin-top: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #C9D3F5; position: relative;">v0.1.0</span>
+  </section>
+
+  <section style="flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #FFFFFF;">
+    <form style="width: 380px; display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <h2 style="margin: 0; font-size: 26px; font-weight: 600;">登录云枢</h2>
+        <p style="margin: 0; font-size: 14px; color: #555C6B;">使用平台账号登录，账号由管理员创建</p>
+      </div>
+      <label style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 500; color: #3F4654;">
+        用户名
+        <input type="text" autocomplete="username" placeholder="请输入用户名" style="height: 44px; box-sizing: border-box; padding: 0 14px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF; color: #151821; font-family: inherit; font-size: 14px; font-weight: 400;">
+      </label>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <label for="login-password" style="font-size: 13px; font-weight: 500; color: #3F4654;">密码</label>
+        <div style="display: flex; align-items: center; height: 44px; box-sizing: border-box; padding: 0 6px 0 14px; border: 1px solid #D5D9E0; border-radius: 8px; background: #FFFFFF;">
+          <input id="login-password" type="{{pwType}}" autocomplete="current-password" placeholder="请输入密码" style="flex-grow: 1; min-width: 0; height: 40px; border: 0; outline: none; background: transparent; color: #151821; font-family: inherit; font-size: 14px;">
+          <button type="button" onClick="{{togglePw}}" aria-label="{{pwLabel}}" style="width: 36px; height: 36px; border: 0; border-radius: 6px; background: transparent; color: #6B7280; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+      <a href="Dashboard.dc.html" style="height: 46px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: #2443B5; color: #FFFFFF; font-size: 15px; font-weight: 500; text-decoration: none;">登录</a>
+      <div style="display: flex; gap: 10px; padding: 12px 14px; border-radius: 8px; background: #F4F6FB; border: 1px solid #E1E6F4; font-size: 13px; line-height: 1.6; color: #3F4654;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2443B5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+        <span>首次部署时，初始管理员 admin 的密码会打印在服务启动日志里，登录后请尽快修改。</span>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #6B7280;">连续 5 次密码错误，账号将锁定 5 分钟。忘记密码请联系管理员重置。</p>
+      <a href="Onboarding.dc.html" style="font-size: 12px; text-decoration: none;">预览：首次登录、尚未接入云账号时的页面</a>
+    </form>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var show = !!(this.state && this.state.showPw);
+    return {
+      pwType: show ? 'text' : 'password',
+      pwLabel: show ? '隐藏密码' : '显示密码',
+      togglePw: () => this.setState({ showPw: !show })
+    };
+  }
+}
+</script>
+</body>
+</html>
