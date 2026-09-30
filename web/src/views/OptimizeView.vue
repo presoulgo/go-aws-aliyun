@@ -279,6 +279,7 @@ const emptyText: Record<Kind, string> = {
             <div class="cell-stack">
               <span>{{ row.region }}</span>
               <span v-if="row.zone" class="sub-muted">{{ zoneLabel(row.zone, row.provider) }}</span>
+              <span v-if="row.data_stale" class="sub-muted" :title="`最后采集：${formatDateTime(row.synced_at)}`">采集失败或已过期</span>
             </div>
           </template>
         </el-table-column>

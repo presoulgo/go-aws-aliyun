@@ -93,6 +93,7 @@ func New(d Deps) (http.Handler, error) {
 		admin.POST("/accounts/:id/test", s.testExistingAccount)
 	}
 	if s.syncer != nil {
+		authed.GET("/accounts/:id/sync-health", s.syncHealth)
 		admin.POST("/accounts/:id/sync", s.syncAccount)
 		admin.POST("/sync/all", s.syncAll)
 		admin.POST("/sync-jobs/:id/cancel", s.cancelJob)
@@ -120,6 +121,8 @@ func New(d Deps) (http.Handler, error) {
 		authed.GET("/alert-rules", s.listAlertRules)
 		admin.PUT("/alert-rules/:key", s.updateAlertRule)
 		authed.GET("/alert-events", s.listAlertEvents)
+		admin.PATCH("/alert-events/:id", s.handleAlertEvent)
+		admin.POST("/alert-events/:id/retry", s.retryAlertEvent)
 		authed.GET("/notify-channels", s.listChannels)
 		admin.POST("/notify-channels", s.createChannel)
 		admin.PUT("/notify-channels/:id", s.updateChannel)

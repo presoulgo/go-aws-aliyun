@@ -52,7 +52,13 @@ func (s *ChangeService) List(f ChangeFilter) ([]ChangeView, int64, error) {
 		q = q.Where("resource_changes.type = ?", f.Type)
 	}
 	if f.Action != "" {
-		q = q.Where("resource_changes.action = ?", f.Action)
+		if f.Action == model.ChangeLeftIdle {
+			q = q.Where("(resource_changes.action = ? OR (resource_changes.action = ? AND resource_changes.type IN ?))", model.ChangeLeftIdle, model.ChangeDeleted, model.WasteTypes)
+		} else if f.Action == model.ChangeDeleted {
+			q = q.Where("resource_changes.action = ? AND resource_changes.type NOT IN ?", model.ChangeDeleted, model.WasteTypes)
+		} else {
+			q = q.Where("resource_changes.action = ?", f.Action)
+		}
 	}
 	if f.Region != "" {
 		q = q.Where("resource_changes.region = ?", f.Region)
@@ -85,6 +91,13 @@ func (s *ChangeService) List(f ChangeFilter) ([]ChangeView, int64, error) {
 	err := q.Select("resource_changes.*, cloud_accounts.name AS account_name").
 		Joins("LEFT JOIN cloud_accounts ON cloud_accounts.id = resource_changes.account_id").
 		Order("resource_changes.id DESC").Offset(p.offset()).Limit(p.PageSize).Scan(&rows).Error
+	// Older syncs stored an idle inventory exit as a deletion. The inventory
+	// never included attached disks/bound IPs, so that history cannot prove deletion.
+	for i := range rows {
+		if rows[i].Action == model.ChangeDeleted && (rows[i].Type == model.TypeDisk || rows[i].Type == model.TypeEIP) {
+			rows[i].Action = model.ChangeLeftIdle
+		}
+	}
 	return rows, total, err
 }
 

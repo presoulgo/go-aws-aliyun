@@ -52,6 +52,48 @@ func (s *Server) listChannels(c *gin.Context) {
 	list(c, items, int64(len(items)))
 }
 
+func (s *Server) handleAlertEvent(c *gin.Context) {
+	id, ok := pathID(c, "id")
+	if !ok {
+		return
+	}
+	var in service.EventHandlingInput
+	if !bindJSON(c, &in) {
+		return
+	}
+	if err := s.alerts.HandleEvent(actorOf(c), id, in); err != nil {
+		respondErr(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (s *Server) retryAlertEvent(c *gin.Context) {
+	id, ok := pathID(c, "id")
+	if !ok {
+		return
+	}
+	n, err := s.alerts.RetryEvent(c.Request.Context(), actorOf(c), id)
+	if err != nil {
+		respondErr(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"sent": n})
+}
+
+func (s *Server) syncHealth(c *gin.Context) {
+	id, ok := pathID(c, "id")
+	if !ok {
+		return
+	}
+	items, err := s.syncer.Health(id)
+	if err != nil {
+		respondErr(c, err)
+		return
+	}
+	list(c, items, int64(len(items)))
+}
+
 func (s *Server) createChannel(c *gin.Context) {
 	var in service.ChannelInput
 	if !bindJSON(c, &in) {

@@ -108,6 +108,7 @@ func (e *syncEnv) runSync(t *testing.T, accountID uint) *model.SyncJob {
 }
 
 func TestSyncUpsertSweepAndPartialFailure(t *testing.T) {
+	hour := time.Now().Truncate(time.Hour).Unix()
 	fp := &fakeProvider{
 		regions: []string{"r1", "r2"},
 		data: map[string][]cloud.Resource{
@@ -115,7 +116,7 @@ func TestSyncUpsertSweepAndPartialFailure(t *testing.T) {
 			"vm|r2":   {vm("c", "r2")},
 			"bucket|": {{Type: model.TypeBucket, Region: "r1", ResourceID: "x", Name: "x", Status: model.StatusRunning}},
 		},
-		cpu: map[string]cloud.CPUStat{"a": {Hourly: map[int64]float64{0: 2, 3600: 4}}},
+		cpu: map[string]cloud.CPUStat{"a": {Hourly: map[int64]float64{hour - 3600: 2, hour: 4}}},
 	}
 	env := newSyncEnv(t, fp)
 	acc, err := env.accounts.Create(context.Background(), env.admin, AccountInput{Name: "fake", Provider: model.ProviderAWS, AccessKeyID: "AKIA1234", AccessKeySecret: "s"})

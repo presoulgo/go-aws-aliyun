@@ -491,6 +491,12 @@ func (s *AccountService) Delete(actor Actor, id uint) error {
 		if err := tx.Where("account_id = ?", id).Delete(&model.AlertEvent{}).Error; err != nil {
 			return err
 		}
+		if err := tx.Where("account_id = ?", id).Delete(&model.AlertDelivery{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("account_id = ?", id).Delete(&model.SyncScope{}).Error; err != nil {
+			return err
+		}
 		return tx.Delete(a).Error
 	})
 	if err != nil {

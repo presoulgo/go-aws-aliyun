@@ -124,6 +124,9 @@ func run() error {
 	dashboard := service.NewDashboardService(db, cfg.Insight.IdleCPUThreshold, cfg.Insight.ExpiringDays)
 	changes := service.NewChangeService(db)
 	alerts := service.NewAlertService(db, box, audit, cfg.App.ExternalURL)
+	resources.SetSyncInterval(cfg.Sync.Interval.D())
+	dashboard.SetSyncInterval(cfg.Sync.Interval.D())
+	alerts.SetSyncInterval(cfg.Sync.Interval.D())
 	if err := alerts.EnsureRules(); err != nil {
 		return err
 	}

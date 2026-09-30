@@ -16,11 +16,23 @@ import (
 
 // ResourceService queries collected resources.
 type ResourceService struct {
-	db       *gorm.DB
-	registry *cloud.Registry
-	idleCPU  float64
-	expDays  int
-	now      func() time.Time
+	db        *gorm.DB
+	registry  *cloud.Registry
+	idleCPU   float64
+	expDays   int
+	now       func() time.Time
+	freshness time.Duration
+}
+
+func (s *ResourceService) SetSyncInterval(interval time.Duration) {
+	s.freshness = freshnessWindow(interval)
+}
+
+func (s *ResourceService) dataWindow() time.Duration {
+	if s.freshness > 0 {
+		return s.freshness
+	}
+	return freshnessWindow(0)
 }
 
 func NewResourceService(db *gorm.DB, registry *cloud.Registry, idleCPU float64, expiringDays int) *ResourceService {
@@ -44,8 +56,10 @@ type ResourceFilter struct {
 // ResourceView is a resource with its account.
 type ResourceView struct {
 	model.Resource
-	AccountName string `json:"account_name"`
-	Idle        bool   `json:"idle"`
+	AccountName  string `json:"account_name"`
+	Idle         bool   `json:"idle"`
+	MetricsStale bool   `json:"metrics_stale"`
+	DataStale    bool   `json:"data_stale"`
 }
 
 var tagKeyRe = regexp.MustCompile(`^[A-Za-z0-9_.:/=+\-@ ]{1,128}$`)
@@ -69,6 +83,7 @@ func (s *ResourceService) base(f ResourceFilter, withType bool) (*gorm.DB, error
 	}
 	if f.Idle {
 		q = q.Where("resources.type = ? AND resources.status = ? AND resources.cpu_24h IS NOT NULL AND resources.cpu_24h < ?", model.TypeVM, model.StatusRunning, s.idleCPU)
+		q = withFreshCPU(q, s.now().UTC(), s.dataWindow())
 	}
 	if f.Expiring {
 		now := s.now().UTC()
@@ -131,14 +146,56 @@ func (s *ResourceService) List(f ResourceFilter) ([]ResourceView, int64, error) 
 	if err != nil {
 		return nil, 0, err
 	}
-	for i := range rows {
-		rows[i].Idle = s.isIdle(&rows[i].Resource)
+	if err := s.freshnessFlags(rows); err != nil {
+		return nil, 0, err
 	}
 	return rows, total, nil
 }
 
 func (s *ResourceService) isIdle(r *model.Resource) bool {
-	return r.Type == model.TypeVM && r.Status == model.StatusRunning && r.CPU24h != nil && *r.CPU24h < s.idleCPU
+	return r.Type == model.TypeVM && r.Status == model.StatusRunning && r.CPU24h != nil && *r.CPU24h < s.idleCPU && freshCPUAt(r.MetricsAt, s.now(), s.dataWindow()) && freshAt(&r.SyncedAt, s.now(), s.dataWindow())
+}
+
+func (s *ResourceService) freshnessFlags(rows []ResourceView) error {
+	if len(rows) == 0 {
+		return nil
+	}
+	ids := []uint{}
+	seen := map[uint]bool{}
+	for _, r := range rows {
+		if !seen[r.AccountID] {
+			ids = append(ids, r.AccountID)
+			seen[r.AccountID] = true
+		}
+	}
+	type key struct {
+		account     uint
+		typ, region string
+	}
+	failed := map[key]bool{}
+	var scopes []model.SyncScope
+	if err := s.db.Where("account_id IN ? AND status = ?", ids, model.JobFailed).Find(&scopes).Error; err != nil {
+		return err
+	}
+	for _, scope := range scopes {
+		failed[key{scope.AccountID, scope.Type, scope.Region}] = true
+	}
+	var accounts []model.CloudAccount
+	if err := s.db.Select("id, last_sync_status").Where("id IN ?", ids).Find(&accounts).Error; err != nil {
+		return err
+	}
+	failedAccounts := map[uint]bool{}
+	for _, acc := range accounts {
+		failedAccounts[acc.ID] = acc.LastSyncStatus == model.JobFailed
+	}
+	now := s.now()
+	for i := range rows {
+		r := &rows[i]
+		r.DataStale = !freshAt(&r.SyncedAt, now, s.dataWindow()) || failedAccounts[r.AccountID] || failed[key{r.AccountID, r.Type, r.Region}] || failed[key{r.AccountID, r.Type, ""}]
+		r.MetricsStale = r.Type == model.TypeVM && (r.DataStale || !freshCPUAt(r.MetricsAt, now, s.dataWindow()) || failed[key{r.AccountID, "metrics", r.Region}])
+		r.Idle = s.isIdle(&r.Resource) && !r.MetricsStale && !r.DataStale
+	}
+	return nil
 }
 
 // Option is a value offered in a filter dropdown.
@@ -269,6 +326,11 @@ func (s *ResourceService) Get(id uint) (*ResourceDetail, error) {
 		CloudAccountUID:  acc.CloudAccountUID,
 		SupportedMetrics: []string{},
 	}
+	views := []ResourceView{d.ResourceView}
+	if err := s.freshnessFlags(views); err != nil {
+		return nil, err
+	}
+	d.ResourceView = views[0]
 	if p, ok := s.registry.Get(r.Provider); ok {
 		if m := p.SupportedMetrics(Ref(&r)); m != nil {
 			d.SupportedMetrics = m

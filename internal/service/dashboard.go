@@ -11,10 +11,22 @@ import (
 
 // DashboardService computes the overview page.
 type DashboardService struct {
-	db      *gorm.DB
-	idleCPU float64
-	expDays int
-	now     func() time.Time
+	db        *gorm.DB
+	idleCPU   float64
+	expDays   int
+	now       func() time.Time
+	freshness time.Duration
+}
+
+func (s *DashboardService) SetSyncInterval(interval time.Duration) {
+	s.freshness = freshnessWindow(interval)
+}
+
+func (s *DashboardService) dataWindow() time.Duration {
+	if s.freshness > 0 {
+		return s.freshness
+	}
+	return freshnessWindow(0)
 }
 
 func NewDashboardService(db *gorm.DB, idleCPU float64, expiringDays int) *DashboardService {
@@ -137,7 +149,7 @@ func (s *DashboardService) Summary(provider string) (*Summary, error) {
 	if err := res().Where("type = ? AND status = ?", model.TypeVM, model.StatusRunning).Count(&out.VMRunning).Error; err != nil {
 		return nil, err
 	}
-	if err := res().Where("type = ? AND status = ? AND cpu_24h IS NOT NULL AND cpu_24h < ?", model.TypeVM, model.StatusRunning, s.idleCPU).Count(&out.Idle).Error; err != nil {
+	if err := withFreshCPU(res(), now, s.dataWindow()).Where("type = ? AND status = ? AND cpu_24h IS NOT NULL AND cpu_24h < ?", model.TypeVM, model.StatusRunning, s.idleCPU).Count(&out.Idle).Error; err != nil {
 		return nil, err
 	}
 	if err := res().Where("type = ?", model.TypeDisk).Count(&out.WasteDisks).Error; err != nil {
@@ -187,7 +199,7 @@ func (s *DashboardService) Summary(provider string) (*Summary, error) {
 	out.CPUTrend = trend
 
 	var top []TopItem
-	err = scope(s.db.Model(&model.Resource{}), "resources.provider").
+	err = withFreshCPU(scope(s.db.Model(&model.Resource{}), "resources.provider"), now, s.dataWindow()).
 		Select("resources.id, resources.name, resources.provider, resources.region, resources.cpu_1h AS cpu, cloud_accounts.name AS account_name").
 		Joins("LEFT JOIN cloud_accounts ON cloud_accounts.id = resources.account_id").
 		Where("resources.type = ? AND resources.status = ? AND resources.cpu_1h IS NOT NULL", model.TypeVM, model.StatusRunning).

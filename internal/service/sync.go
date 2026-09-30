@@ -295,7 +295,12 @@ func (s *SyncService) run(ctx context.Context, acc *model.CloudAccount, job *mod
 				}
 			} else if skipped {
 				// Nothing lives in a region where the product does not exist.
-				_ = s.persist(acc, job.ID, t, nil, start, true)
+				if perr := s.persist(acc, job.ID, t, nil, start, true); perr != nil {
+					err, skipped = perr, false
+				}
+			}
+			if scopeErr := s.recordScope(acc.ID, t.typ, t.region, err, skipped); scopeErr != nil {
+				err, skipped = errors.Join(err, scopeErr), false
 			}
 			mu.Lock()
 			for _, r := range res {
@@ -407,7 +412,11 @@ func (s *SyncService) persist(acc *model.CloudAccount, jobID uint, t task, res [
 	if sweep {
 		for _, r := range old {
 			if _, left := byKey[r.Region+"\x00"+r.ResourceID]; left && r.SyncedAt.Before(start) {
-				changes = append(changes, change(r, model.ChangeDeleted, nil))
+				action := model.ChangeDeleted
+				if r.Type == model.TypeDisk || r.Type == model.TypeEIP {
+					action = model.ChangeLeftIdle
+				}
+				changes = append(changes, change(r, action, nil))
 				gone++
 			}
 		}
@@ -518,7 +527,6 @@ func (s *SyncService) collectCPU(ctx context.Context, acc *model.CloudAccount, p
 		count int
 	}
 	hourly := map[int64]*agg{}
-	now := s.now().UTC()
 	for region, ids := range vmIDs {
 		if len(ids) == 0 {
 			continue
@@ -527,6 +535,9 @@ func (s *SyncService) collectCPU(ctx context.Context, acc *model.CloudAccount, p
 		stats, err := prov.CPUSnapshot(cctx, cred, region, ids)
 		cancel()
 		if err != nil {
+			if scopeErr := s.recordScope(acc.ID, "metrics", region, err, false); scopeErr != nil {
+				err = errors.Join(err, scopeErr)
+			}
 			errs = append(errs, model.TaskError{Region: region, Type: "metrics", Message: "CPU 数据：" + cloud.Describe(err)})
 			continue
 		}
@@ -539,9 +550,16 @@ func (s *SyncService) collectCPU(ctx context.Context, acc *model.CloudAccount, p
 					continue
 				}
 				last, avg = round2(last), round2(avg)
+				var latest int64
+				for h := range st.Hourly {
+					if h > latest {
+						latest = h
+					}
+				}
+				metricsAt := time.Unix(latest, 0).UTC()
 				if err := tx.Model(&model.Resource{}).
 					Where("account_id = ? AND type = ? AND region = ? AND resource_id = ?", acc.ID, model.TypeVM, region, id).
-					Updates(map[string]any{"cpu_1h": last, "cpu_24h": avg, "metrics_at": now}).Error; err != nil {
+					Updates(map[string]any{"cpu_1h": last, "cpu_24h": avg, "metrics_at": metricsAt}).Error; err != nil {
 					return err
 				}
 				for h, v := range st.Hourly {
@@ -557,6 +575,9 @@ func (s *SyncService) collectCPU(ctx context.Context, acc *model.CloudAccount, p
 			return nil
 		})
 		s.writeMu.Unlock()
+		if scopeErr := s.recordScope(acc.ID, "metrics", region, err, false); scopeErr != nil {
+			err = errors.Join(err, scopeErr)
+		}
 		if err != nil {
 			errs = append(errs, model.TaskError{Region: region, Type: "metrics", Message: err.Error()})
 		}
@@ -578,6 +599,36 @@ func (s *SyncService) collectCPU(ctx context.Context, acc *model.CloudAccount, p
 		errs = append(errs, model.TaskError{Type: "metrics", Message: err.Error()})
 	}
 	return errs
+}
+
+func (s *SyncService) recordScope(accountID uint, typ, region string, collectErr error, skipped bool) error {
+	now := s.now().UTC()
+	row := model.SyncScope{AccountID: accountID, Type: typ, Region: region, LastAttemptAt: now, Status: model.JobSuccess}
+	columns := []string{"last_attempt_at", "status", "error"}
+	if collectErr != nil && !skipped {
+		row.Status, row.Error = model.JobFailed, cloud.Describe(collectErr)
+	} else {
+		row.LastSuccessAt = &now
+		columns = append(columns, "last_success_at")
+		if skipped {
+			row.Status = "skipped"
+		}
+	}
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	return s.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "account_id"}, {Name: "type"}, {Name: "region"}},
+		DoUpdates: clause.AssignmentColumns(columns),
+	}).Create(&row).Error
+}
+
+func (s *SyncService) Health(accountID uint) ([]model.SyncScope, error) {
+	if _, err := s.accounts.find(accountID); err != nil {
+		return nil, err
+	}
+	rows := []model.SyncScope{}
+	err := s.db.Where("account_id = ?", accountID).Order("type, region").Find(&rows).Error
+	return rows, err
 }
 
 func (s *SyncService) finish(acc *model.CloudAccount, job *model.SyncJob, status string, stats model.IntMap, errs model.TaskErrors, msg string) {

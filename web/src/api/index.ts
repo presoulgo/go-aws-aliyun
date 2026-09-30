@@ -26,6 +26,7 @@ import type {
   Role,
   SyncJob,
   SyncStatus,
+  SyncScope,
   TestResult,
   User,
   UserView,
@@ -91,6 +92,7 @@ export const accountApi = {
 }
 
 export const syncApi = {
+  health: (id: number) => http.get<ListResult<SyncScope>>(`/accounts/${id}/sync-health`).then((r) => r.data),
   syncAccount: (id: number) => http.post<SyncJob>(`/accounts/${id}/sync`).then((r) => r.data),
   syncAll: () => http.post<ListResult<SyncJob>>('/sync/all').then((r) => r.data),
   cancel: (jobId: number) => http.post<SyncJob>(`/sync-jobs/${jobId}/cancel`).then((r) => r.data),
@@ -109,6 +111,9 @@ export const resourceApi = {
 }
 
 export const alertApi = {
+  handle: (id: number, body: { acknowledged?: boolean; note?: string; silence_minutes?: number }) =>
+    http.patch(`/alert-events/${id}`, body, { silent: true }),
+  retry: (id: number) => http.post<{ sent: number }>(`/alert-events/${id}/retry`, undefined, { silent: true, timeout: 120000 }).then((r) => r.data),
   rules: () => http.get<ListResult<AlertRule>>('/alert-rules').then((r) => r.data),
   updateRule: (key: string, body: { enabled: boolean; params: Record<string, number>; channel_ids: number[] }) =>
     http.put(`/alert-rules/${key}`, body, { silent: true }),

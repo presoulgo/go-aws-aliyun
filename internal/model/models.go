@@ -199,9 +199,10 @@ type AuditLog struct {
 
 // Resource change actions.
 const (
-	ChangeCreated = "created"
-	ChangeUpdated = "updated"
-	ChangeDeleted = "deleted"
+	ChangeCreated  = "created"
+	ChangeUpdated  = "updated"
+	ChangeDeleted  = "deleted"
+	ChangeLeftIdle = "left_idle"
 )
 
 // ResourceChange records a resource appearing, changing or disappearing
@@ -263,19 +264,48 @@ type AlertEvent struct {
 	Status    string `gorm:"size:16;not null;index:idx_alert_open,priority:3" json:"status"`
 	// TargetKey identifies what the alert is about: "type:region:resource_id",
 	// or "account" for account level rules.
-	TargetKey    string     `gorm:"size:512;not null" json:"target_key"`
-	ResourceType string     `gorm:"size:16" json:"resource_type"`
-	Region       string     `gorm:"size:64" json:"region"`
-	ResourceID   string     `gorm:"size:255" json:"resource_id"`
-	Name         string     `gorm:"size:255" json:"name"`
-	Detail       string     `gorm:"type:text" json:"detail"`
-	FiredAt      time.Time  `gorm:"index" json:"fired_at"`
-	ResolvedAt   *time.Time `json:"resolved_at"`
-	NotifyError  string     `gorm:"type:text" json:"notify_error"`
+	TargetKey      string     `gorm:"size:512;not null" json:"target_key"`
+	ResourceType   string     `gorm:"size:16" json:"resource_type"`
+	Region         string     `gorm:"size:64" json:"region"`
+	ResourceID     string     `gorm:"size:255" json:"resource_id"`
+	Name           string     `gorm:"size:255" json:"name"`
+	Detail         string     `gorm:"type:text" json:"detail"`
+	FiredAt        time.Time  `gorm:"index" json:"fired_at"`
+	ResolvedAt     *time.Time `json:"resolved_at"`
+	NotifyError    string     `gorm:"type:text" json:"notify_error"`
+	AcknowledgedAt *time.Time `json:"acknowledged_at"`
+	AcknowledgedBy string     `gorm:"size:64" json:"acknowledged_by"`
+	Note           string     `gorm:"type:text" json:"note"`
+	SilencedUntil  *time.Time `json:"silenced_until"`
+}
+
+// SyncScope retains the last successful collection, including empty inventories.
+type SyncScope struct {
+	AccountID     uint       `gorm:"primaryKey" json:"account_id"`
+	Type          string     `gorm:"primaryKey;size:16" json:"type"`
+	Region        string     `gorm:"primaryKey;size:64" json:"region"`
+	LastAttemptAt time.Time  `json:"last_attempt_at"`
+	LastSuccessAt *time.Time `json:"last_success_at"`
+	Status        string     `gorm:"size:16" json:"status"`
+	Error         string     `gorm:"type:text" json:"error"`
+}
+
+// AlertDelivery stores the original aggregate message so retries survive restarts.
+type AlertDelivery struct {
+	ID        uint     `gorm:"primaryKey"`
+	AccountID uint     `gorm:"index"`
+	ChannelID uint     `gorm:"index"`
+	EventIDs  UintList `gorm:"not null"`
+	Payload   string   `gorm:"type:text;not null"`
+	Status    string   `gorm:"size:16;index"`
+	Error     string   `gorm:"type:text"`
+	Attempts  int
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // All lists every model for migrations.
 func All() []any {
 	return []any{&User{}, &CloudAccount{}, &Resource{}, &SyncJob{}, &HostCPUHourly{}, &AuditLog{}, &ResourceChange{},
-		&NotifyChannel{}, &AlertRule{}, &AlertEvent{}}
+		&NotifyChannel{}, &AlertRule{}, &AlertEvent{}, &SyncScope{}, &AlertDelivery{}}
 }

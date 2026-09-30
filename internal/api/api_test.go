@@ -60,9 +60,15 @@ func newTestEnv(t *testing.T) *testEnv {
 	reg := cloud.NewRegistry(demo.NewAWS().WithoutDelay(), demo.NewAliyun().WithoutDelay())
 	accounts := service.NewAccountService(db, box, reg, audit)
 	syncer := service.NewSyncService(db, accounts, audit, service.SyncOptions{Concurrency: 4, TaskTimeout: 5 * time.Second})
+	alerts := service.NewAlertService(db, box, audit, "")
+	if err := alerts.EnsureRules(); err != nil {
+		t.Fatal(err)
+	}
+	syncer.OnFinish = alerts.OnSyncFinished
 	h, err := New(Deps{
 		Meta: Meta{Name: "云枢"}, Users: users, Audit: audit, Web: web,
 		Accounts: accounts, Sync: syncer,
+		Alerts:    alerts,
 		Resources: service.NewResourceService(db, reg, 5, 30),
 		Metrics:   service.NewMetricsService(db, accounts, reg, time.Minute),
 		Dashboard: service.NewDashboardService(db, 5, 30),
@@ -131,6 +137,8 @@ func TestAuthAndRBAC(t *testing.T) {
 		{"POST", "/api/v1/users"},
 		{"GET", "/api/v1/audit-logs"},
 		{"DELETE", "/api/v1/users/1"},
+		{"PATCH", "/api/v1/alert-events/1"},
+		{"POST", "/api/v1/alert-events/1/retry"},
 	} {
 		if code, _, _ := env.do(tc.method, tc.path, viewer, map[string]string{}); code != http.StatusForbidden {
 			t.Errorf("viewer %s %s = %d, want 403", tc.method, tc.path, code)

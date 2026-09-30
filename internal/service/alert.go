@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -57,7 +58,7 @@ var ruleDefs = []ruleDef{
 	{RuleExpiring, "资源即将到期", "包年包月资源在设定天数内到期", true,
 		[]paramDef{{"days", 7, 1, 365}}},
 	{RuleWaste, "未挂载云盘 / 未绑定弹性 IP", "存在仍在计费的闲置云盘或弹性 IP", true, nil},
-	{RuleSyncFailed, "同步失败", "账号同步失败（全部采集任务都失败）", true, nil},
+	{RuleSyncFailed, "同步失败 / 部分失败", "资源或 CPU 采集失败，列出受影响的地域和类型", true, nil},
 }
 
 func findRuleDef(key string) *ruleDef {
@@ -79,8 +80,10 @@ type AlertService struct {
 	now         func() time.Time
 	send        func(context.Context, notify.Target, notify.Message) error
 
-	evalMu  sync.Mutex
-	pending sync.WaitGroup
+	evalMu     sync.Mutex
+	deliveryMu sync.Mutex
+	freshness  time.Duration
+	pending    sync.WaitGroup
 }
 
 func NewAlertService(db *gorm.DB, box *secret.Box, audit *AuditService, externalURL string) *AlertService {
@@ -88,6 +91,17 @@ func NewAlertService(db *gorm.DB, box *secret.Box, audit *AuditService, external
 		db: db, box: box, audit: audit, externalURL: strings.TrimRight(externalURL, "/"),
 		now: time.Now, send: notify.SendWithRetry,
 	}
+}
+
+func (s *AlertService) SetSyncInterval(interval time.Duration) {
+	s.freshness = freshnessWindow(interval)
+}
+
+func (s *AlertService) dataWindow() time.Duration {
+	if s.freshness > 0 {
+		return s.freshness
+	}
+	return freshnessWindow(0)
 }
 
 // EnsureRules creates missing built-in rules with their defaults.
@@ -478,9 +492,10 @@ type EventFilter struct {
 // EventView is an event with its account and rule name.
 type EventView struct {
 	model.AlertEvent
-	AccountName string `json:"account_name"`
-	Provider    string `json:"provider"`
-	RuleName    string `json:"rule_name"`
+	AccountName     string `json:"account_name"`
+	Provider        string `json:"provider"`
+	RuleName        string `json:"rule_name"`
+	NotifyRetryable bool   `json:"notify_retryable"`
 }
 
 // Events lists alert events, open ones first.
@@ -505,7 +520,7 @@ func (s *AlertService) Events(f EventFilter) ([]EventView, int64, error) {
 	}
 	p := f.Page.normalize(20, 200)
 	var rows []EventView
-	err := q.Select("alert_events.*, cloud_accounts.name AS account_name, cloud_accounts.provider AS provider").
+	err := q.Select("alert_events.*, cloud_accounts.name AS account_name, cloud_accounts.provider AS provider, EXISTS (SELECT 1 FROM alert_deliveries ad, json_each(ad.event_ids) ids WHERE ids.value = alert_events.id AND ad.status IN ('failed','pending')) AS notify_retryable").
 		Joins("LEFT JOIN cloud_accounts ON cloud_accounts.id = alert_events.account_id").
 		Order("alert_events.status = 'firing' DESC, alert_events.fired_at DESC, alert_events.id DESC").
 		Offset(p.offset()).Limit(p.PageSize).Scan(&rows).Error
@@ -520,6 +535,9 @@ func (s *AlertService) Events(f EventFilter) ([]EventView, int64, error) {
 // Cleanup drops resolved events older than before.
 func (s *AlertService) Cleanup(before time.Time) (int64, error) {
 	res := s.db.Where("status = ? AND resolved_at < ?", model.AlertResolved, before.UTC()).Delete(&model.AlertEvent{})
+	if res.Error == nil {
+		res.Error = s.db.Where("NOT EXISTS (SELECT 1 FROM json_each(alert_deliveries.event_ids) ids JOIN alert_events ON alert_events.id = ids.value)").Delete(&model.AlertDelivery{}).Error
+	}
 	return res.RowsAffected, res.Error
 }
 
@@ -559,6 +577,69 @@ type alertHit struct {
 	key, typ, region, resourceID, name, value string
 }
 
+type alertHealth struct {
+	scopes map[string]model.SyncScope
+	failed map[string]bool
+	cutoff time.Time
+}
+
+func scopeKey(typ, region string) string { return typ + ":" + region }
+
+func (h alertHealth) available(typ, region string) bool {
+	if h.failed[scopeKey(typ, region)] || h.failed[scopeKey(typ, "")] {
+		return false
+	}
+	scope, ok := h.scopes[scopeKey(typ, region)]
+	if !ok {
+		scope, ok = h.scopes[scopeKey(typ, "")]
+	}
+	return !ok || (scope.Status != model.JobFailed && scope.LastSuccessAt != nil && !scope.LastSuccessAt.Before(h.cutoff))
+}
+
+func (s *AlertService) health(acc *model.CloudAccount, now time.Time) (alertHealth, error) {
+	h := alertHealth{scopes: map[string]model.SyncScope{}, failed: map[string]bool{}, cutoff: now.Add(-s.dataWindow())}
+	var scopes []model.SyncScope
+	if err := s.db.Where("account_id = ?", acc.ID).Find(&scopes).Error; err != nil {
+		return h, err
+	}
+	for _, scope := range scopes {
+		h.scopes[scopeKey(scope.Type, scope.Region)] = scope
+	}
+	var job model.SyncJob
+	err := s.db.Where("account_id = ? AND finished_at IS NOT NULL", acc.ID).Order("id DESC").First(&job).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return h, err
+	}
+	for _, e := range job.Errors {
+		h.failed[scopeKey(e.Type, e.Region)] = true
+	}
+	return h, nil
+}
+
+func (s *AlertService) evaluable(acc *model.CloudAccount, rule, typ, region, resourceID string, h alertHealth, now time.Time) (bool, error) {
+	if !h.available(typ, region) {
+		return false, nil
+	}
+	var r model.Resource
+	err := s.db.Where("account_id = ? AND type = ? AND region = ? AND resource_id = ?", acc.ID, typ, region, resourceID).First(&r).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return freshAt(acc.LastSyncAt, now, s.dataWindow()), nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if !freshAt(&r.SyncedAt, now, s.dataWindow()) {
+		return false, nil
+	}
+	if rule == RuleCPUHigh || rule == RuleIdleHost {
+		if r.Status != model.StatusRunning {
+			return true, nil
+		}
+		return h.available("metrics", region) && freshCPUAt(r.MetricsAt, now, s.dataWindow()), nil
+	}
+	return true, nil
+}
+
 func (s *AlertService) evaluate(accountID uint) error {
 	var acc model.CloudAccount
 	if err := s.db.First(&acc, accountID).Error; err != nil {
@@ -574,13 +655,20 @@ func (s *AlertService) evaluate(accountID uint) error {
 	// After a failed sync the resource data is stale: only report the failure.
 	failed := acc.LastSyncStatus == model.JobFailed
 	now := s.now().UTC()
+	health, err := s.health(&acc, now)
+	if err != nil {
+		return err
+	}
 	for i := range ruleDefs {
 		d := &ruleDefs[i]
 		r, ok := rules[d.Key]
 		if !ok || !r.Enabled || (failed && d.Key != RuleSyncFailed) {
 			continue
 		}
-		hits, err := s.hits(&acc, d.Key, ruleParams(d, r), now)
+		if d.Key == RuleSyncFailed && acc.LastSyncStatus == model.JobCancelled {
+			continue
+		}
+		hits, err := s.hits(&acc, d.Key, ruleParams(d, r), now, health)
 		if err != nil {
 			return err
 		}
@@ -595,7 +683,12 @@ func (s *AlertService) evaluate(accountID uint) error {
 		}
 		var fired []model.AlertEvent
 		for _, h := range hits {
-			if _, ok := openBy[h.key]; ok {
+			if old, ok := openBy[h.key]; ok {
+				if old.Detail != h.value {
+					if err := s.db.Model(&old).Update("detail", h.value).Error; err != nil {
+						return err
+					}
+				}
 				delete(openBy, h.key)
 				continue
 			}
@@ -604,10 +697,27 @@ func (s *AlertService) evaluate(accountID uint) error {
 				ResourceType: h.typ, Region: h.region, ResourceID: h.resourceID, Name: truncate(h.name, 255),
 				Detail: h.value, FiredAt: now,
 			})
+			var previous model.AlertEvent
+			err := s.db.Where("rule_key = ? AND account_id = ? AND target_key = ? AND silenced_until > ?", d.Key, acc.ID, h.key, now).Order("id DESC").First(&previous).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+			if err == nil {
+				fired[len(fired)-1].SilencedUntil = previous.SilencedUntil
+			}
 		}
 		var resolved []model.AlertEvent
 		for _, e := range open {
 			if _, left := openBy[e.TargetKey]; left {
+				if d.Key != RuleSyncFailed {
+					ok, err := s.evaluable(&acc, d.Key, e.ResourceType, e.Region, e.ResourceID, health, now)
+					if err != nil {
+						return err
+					}
+					if !ok {
+						continue
+					}
+				}
 				resolved = append(resolved, e)
 			}
 		}
@@ -639,14 +749,29 @@ func (s *AlertService) evaluate(accountID uint) error {
 	return nil
 }
 
-func (s *AlertService) hits(acc *model.CloudAccount, key string, p map[string]float64, now time.Time) ([]alertHit, error) {
+func (s *AlertService) hits(acc *model.CloudAccount, key string, p map[string]float64, now time.Time, health alertHealth) ([]alertHit, error) {
 	if key == RuleSyncFailed {
-		if acc.LastSyncStatus != model.JobFailed {
+		if acc.LastSyncStatus != model.JobFailed && acc.LastSyncStatus != model.JobPartial {
 			return nil, nil
 		}
-		return []alertHit{{key: "account", name: acc.Name, value: truncate(acc.LastSyncError, 300)}}, nil
+		var job model.SyncJob
+		if err := s.db.Where("account_id = ? AND finished_at IS NOT NULL", acc.ID).Order("id DESC").First(&job).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+		parts := []string{}
+		for _, e := range job.Errors {
+			last := "暂无成功采集记录"
+			if scope, ok := health.scopes[scopeKey(e.Type, e.Region)]; ok && scope.LastSuccessAt != nil {
+				last = "上次成功 " + scope.LastSuccessAt.Local().Format("2006-01-02 15:04")
+			}
+			parts = append(parts, fmt.Sprintf("%s / %s：%s（%s）", e.Region, e.Type, e.Message, last))
+		}
+		if len(parts) == 0 {
+			parts = append(parts, acc.LastSyncError)
+		}
+		return []alertHit{{key: "account", name: acc.Name, value: strings.Join(parts, "；")}}, nil
 	}
-	q := s.db.Where("account_id = ?", acc.ID)
+	q := s.db.Where("account_id = ? AND synced_at >= ?", acc.ID, health.cutoff)
 	switch key {
 	case RuleCPUHigh:
 		q = q.Where("type = ? AND status = ? AND cpu_1h >= ?", model.TypeVM, model.StatusRunning, p["threshold"])
@@ -665,6 +790,14 @@ func (s *AlertService) hits(acc *model.CloudAccount, key string, p map[string]fl
 	}
 	out := make([]alertHit, 0, len(rows))
 	for _, r := range rows {
+		if !health.available(r.Type, r.Region) {
+			continue
+		}
+		if key == RuleCPUHigh || key == RuleIdleHost {
+			if !health.available("metrics", r.Region) || !freshCPUAt(r.MetricsAt, now, s.dataWindow()) {
+				continue
+			}
+		}
 		h := alertHit{
 			key: r.Type + ":" + r.Region + ":" + r.ResourceID, typ: r.Type, region: r.Region,
 			resourceID: r.ResourceID, name: r.Name,
@@ -674,9 +807,9 @@ func (s *AlertService) hits(acc *model.CloudAccount, key string, p map[string]fl
 		}
 		switch key {
 		case RuleCPUHigh:
-			h.value = fmt.Sprintf("近 1 小时 CPU %.1f%%", deref(r.CPU1h))
+			h.value = fmt.Sprintf("近 1 小时 CPU %.1f%%（样本 %s）", deref(r.CPU1h), r.MetricsAt.Local().Format("01-02 15:04"))
 		case RuleIdleHost:
-			h.value = fmt.Sprintf("24 小时 CPU 均值 %.1f%%", deref(r.CPU24h))
+			h.value = fmt.Sprintf("24 小时 CPU 均值 %.1f%%（样本 %s）", deref(r.CPU24h), r.MetricsAt.Local().Format("01-02 15:04"))
 		case RuleExpiring:
 			days := int(r.ExpireAt.Sub(now).Hours() / 24)
 			h.value = fmt.Sprintf("%d 天后到期（%s）", days, r.ExpireAt.Local().Format("2006-01-02"))
@@ -702,6 +835,13 @@ func deref(v *float64) float64 {
 // notify sends one aggregated message per channel in the background and
 // records delivery failures on the events.
 func (s *AlertService) notify(d *ruleDef, acc *model.CloudAccount, channelIDs []uint, event string, events []model.AlertEvent, at time.Time) {
+	eligible := make([]model.AlertEvent, 0, len(events))
+	for _, e := range events {
+		if e.SilencedUntil == nil || !e.SilencedUntil.After(at) {
+			eligible = append(eligible, e)
+		}
+	}
+	events = eligible
 	if len(events) == 0 || len(channelIDs) == 0 {
 		return
 	}
@@ -726,29 +866,32 @@ func (s *AlertService) notify(d *ruleDef, acc *model.CloudAccount, channelIDs []
 		}
 		msg.Items = append(msg.Items, notify.Item{Name: e.Name, ResourceID: e.ResourceID, Region: e.Region, Value: e.Detail})
 	}
-	ids := make([]uint, len(events))
+	ids := make(model.UintList, len(events))
 	for i, e := range events {
 		ids[i] = e.ID
+	}
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		slog.Error("保存告警通知失败", "err", err)
+		return
+	}
+	deliveries := make([]model.AlertDelivery, 0, len(channels))
+	for _, c := range channels {
+		deliveries = append(deliveries, model.AlertDelivery{AccountID: acc.ID, ChannelID: c.ID, EventIDs: ids, Payload: string(payload), Status: "pending"})
+	}
+	if err := s.db.Create(&deliveries).Error; err != nil {
+		slog.Error("保存告警通知失败", "err", err)
+		return
 	}
 	s.pending.Add(1)
 	go func() {
 		defer s.pending.Done()
-		var errs []string
-		for i := range channels {
-			c := &channels[i]
-			t, err := s.target(c)
-			if err == nil {
-				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-				err = s.send(ctx, t, msg)
-				cancel()
+		for _, delivery := range deliveries {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			if err := s.deliver(ctx, delivery.ID); err != nil {
+				slog.Warn("告警通知发送失败", "delivery", delivery.ID, "err", err)
 			}
-			if err != nil {
-				slog.Warn("告警通知发送失败", "channel", c.Name, "rule", d.Key, "err", err)
-				errs = append(errs, c.Name+"："+err.Error())
-			}
-		}
-		if len(errs) > 0 {
-			s.db.Model(&model.AlertEvent{}).Where("id IN ?", ids).Update("notify_error", strings.Join(errs, "；"))
+			cancel()
 		}
 	}()
 }

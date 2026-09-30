@@ -119,6 +119,36 @@ function eventLink(e: AlertEvent) {
   return { path: '/resources', query: { type: e.resource_type || undefined, q: e.resource_id } }
 }
 
+const handling = reactive({ open: false, id: 0, acknowledged: false, note: '', silence: -1, saving: false })
+const retrying = ref<number | null>(null)
+function silenced(e: AlertEvent): boolean {
+  return !!e.silenced_until && dayjs(e.silenced_until).isAfter(dayjs(app.now))
+}
+function openHandling(e: AlertEvent) {
+  Object.assign(handling, { open: true, id: e.id, acknowledged: !!e.acknowledged_at, note: e.note, silence: -1 })
+}
+async function saveHandling() {
+  handling.saving = true
+  try {
+    await alertApi.handle(handling.id, {
+      acknowledged: handling.acknowledged, note: handling.note,
+      silence_minutes: handling.silence < 0 ? undefined : handling.silence,
+    })
+    handling.open = false
+    ElMessage.success('已保存告警处理记录')
+    await loadEvents()
+  } catch (e) { ElMessage.error(errorMessage(e)) }
+  finally { handling.saving = false }
+}
+async function retryNotification(e: AlertEvent) {
+  retrying.value = e.id
+  try {
+    const res = await alertApi.retry(e.id)
+    ElMessage.success(`已成功重发 ${res.sent} 条通知`)
+  } catch (err) { ElMessage.error(errorMessage(err)) }
+  finally { retrying.value = null; await loadEvents() }
+}
+
 // ---------- 告警规则 ----------
 const paramMeta: Record<string, { label: string; unit: string; min: number; max: number; step: number }> = {
   threshold: { label: '阈值', unit: '%', min: 0.1, max: 100, step: 1 },
@@ -326,6 +356,10 @@ async function removeChannel(c: NotifyChannel) {
             <div class="cell-stack">
               <span class="detail">{{ row.detail || '—' }}</span>
               <span v-if="row.notify_error" class="notify-err" :title="row.notify_error">通知失败：{{ row.notify_error }}</span>
+        <span v-if="row.notify_error && !row.notify_retryable" class="sub-muted">历史通知未保存投递内容，无法重发</span>
+        <span v-if="row.acknowledged_at" class="sub-muted">{{ row.acknowledged_by }} 已确认 · {{ time(row.acknowledged_at) }}</span>
+        <span v-if="row.note" class="detail">备注：{{ row.note }}</span>
+        <span v-if="silenced(row)" class="sub-muted">静默至 {{ dayjs(row.silenced_until).format('MM-DD HH:mm') }}</span>
             </div>
           </template>
         </el-table-column>
@@ -337,6 +371,14 @@ async function removeChannel(c: NotifyChannel) {
             </div>
           </template>
         </el-table-column>
+    <el-table-column v-if="auth.isAdmin" label="处理" width="140" fixed="right">
+      <template #default="{ row }">
+        <div class="cell-stack">
+          <el-button link type="primary" @click="openHandling(row)">处理 / 备注</el-button>
+          <el-button v-if="row.notify_retryable" link type="primary" :loading="retrying === row.id" :disabled="retrying !== null || silenced(row)" @click="retryNotification(row)">重发通知</el-button>
+        </div>
+      </template>
+    </el-table-column>
         <template #empty>
           <span v-if="eventsLoaded" class="empty">{{ status === 'firing' ? '当前没有告警' : '没有记录' }}</span>
         </template>
@@ -357,7 +399,7 @@ async function removeChannel(c: NotifyChannel) {
     <!-- 告警规则 -->
     <div v-else-if="tab === 'rules'" class="rules">
       <p class="note">
-        规则只检查本地已同步的数据，不额外调用云 API。同步失败时只检查“同步失败”规则，其余规则保持上次结果。
+        规则检查本地数据。超过 {{ Math.max(90, app.meta.sync_interval_minutes * 2) }} 分钟的数据不产生新告警（CPU 从采样小时结束起计算）；采集失败或数据过期时保留已有告警，采集恢复后重新判断。部分失败会显示受影响的地域和类型。
         <template v-if="!auth.isAdmin">只读用户只能查看规则。</template>
       </p>
       <div v-for="r in rules" :key="r.key" class="rule" :class="{ off: !drafts[r.key]?.enabled }">
@@ -455,6 +497,31 @@ async function removeChannel(c: NotifyChannel) {
       </el-table>
     </template>
   </section>
+
+  <el-dialog v-model="handling.open" title="处理告警" width="500px" :close-on-click-modal="false" append-to-body>
+    <div class="form">
+      <el-checkbox v-model="handling.acknowledged">已确认，正在处理</el-checkbox>
+      <label class="field">
+        <span class="label">处理备注</span>
+        <el-input v-model="handling.note" type="textarea" :rows="4" maxlength="2000" show-word-limit />
+      </label>
+      <label class="field">
+        <span class="label">静默通知</span>
+        <el-select v-model="handling.silence">
+          <el-option label="保持当前设置" :value="-1" />
+          <el-option label="取消静默" :value="0" />
+          <el-option label="静默 1 小时" :value="60" />
+          <el-option label="静默 4 小时" :value="240" />
+          <el-option label="静默 24 小时" :value="1440" />
+        </el-select>
+        <span class="hint">静默期间继续记录状态，暂停该对象的触发、恢复及重发通知。到期后恢复后续状态变更通知，期间通知不补发。</span>
+      </label>
+    </div>
+    <template #footer>
+      <el-button @click="handling.open = false">取消</el-button>
+      <el-button type="primary" :loading="handling.saving" @click="saveHandling">保存</el-button>
+    </template>
+  </el-dialog>
 
   <el-dialog
     v-model="dialog.open"

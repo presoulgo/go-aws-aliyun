@@ -183,6 +183,8 @@ export interface Resource {
   cpu_1h: number | null
   cpu_24h: number | null
   metrics_at: string | null
+  metrics_stale: boolean
+  data_stale: boolean
   synced_at: string
   created_at: string
   updated_at: string
@@ -313,7 +315,7 @@ export interface DashboardSummary {
   }[]
 }
 
-export type ChangeAction = 'created' | 'updated' | 'deleted'
+export type ChangeAction = 'created' | 'updated' | 'deleted' | 'left_idle'
 
 export interface FieldChange {
   field: string
@@ -380,6 +382,21 @@ export interface AlertEvent {
   fired_at: string
   resolved_at: string | null
   notify_error: string
+  acknowledged_at: string | null
+  acknowledged_by: string
+  note: string
+  silenced_until: string | null
+  notify_retryable: boolean
+}
+
+export interface SyncScope {
+  account_id: number
+  type: ResourceType | 'metrics'
+  region: string
+  last_attempt_at: string
+  last_success_at: string | null
+  status: 'success' | 'failed' | 'skipped'
+  error: string
 }
 
 export interface NotifyChannel {

@@ -424,10 +424,10 @@ const expDays = 30
             <template #default="{ row }">
               <div class="cpu-cell">
                 <span class="cpu-line">
-                  <span class="cpu-val" :style="{ color: cpuTone(row.cpu_1h).text }">{{ formatPercent(row.cpu_1h) }}</span>
+                  <span class="cpu-val" :style="{ color: cpuTone(row.metrics_stale ? null : row.cpu_1h).text }" :title="row.metrics_stale ? `CPU 数据不可用或已过期，样本时间：${row.metrics_at || '无'}` : ''">{{ row.metrics_stale ? '待更新' : formatPercent(row.cpu_1h) }}</span>
                   <span v-if="row.idle" class="idle-tag">闲置</span>
                 </span>
-                <span class="bar"><span :style="{ width: `${Math.min(100, row.cpu_1h ?? 0)}%`, background: cpuTone(row.cpu_1h).bar }" /></span>
+                <span class="bar"><span :style="{ width: `${Math.min(100, row.metrics_stale ? 0 : row.cpu_1h ?? 0)}%`, background: cpuTone(row.cpu_1h).bar }" /></span>
               </div>
             </template>
           </el-table-column>

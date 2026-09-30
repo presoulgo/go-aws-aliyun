@@ -8,7 +8,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import AccountDialog from './AccountDialog.vue'
-import { accountApi, syncApi, type Account, type SyncJob } from '@/api'
+import { accountApi, syncApi, type Account, type SyncJob, type SyncScope } from '@/api'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { dayjs, formatDuration, formatNumber, fromNow, intervalText } from '@/utils/format'
@@ -168,6 +168,7 @@ async function onSaved(acc: Account) {
 
 // ---------- 同步历史 ----------
 const jobs = ref<SyncJob[]>([])
+const scopes = ref<SyncScope[]>([])
 const jobsTotal = ref(0)
 const jobPage = ref(1)
 const jobsLoading = ref(false)
@@ -176,6 +177,7 @@ const JOB_PAGE = 10
 async function loadJobs(reset = false) {
   const id = selectedId.value
   if (!id) {
+     scopes.value = []
     jobs.value = []
     jobsTotal.value = 0
     return
@@ -183,8 +185,12 @@ async function loadJobs(reset = false) {
   if (reset) jobPage.value = 1
   jobsLoading.value = true
   try {
-    const res = await syncApi.jobs({ account_id: id, page: 1, page_size: JOB_PAGE * jobPage.value })
+    const [res, health] = await Promise.all([
+      syncApi.jobs({ account_id: id, page: 1, page_size: JOB_PAGE * jobPage.value }),
+      syncApi.health(id),
+    ])
     if (selectedId.value === id) {
+      scopes.value = health.items
       jobs.value = res.items
       jobsTotal.value = res.total
     }
@@ -363,6 +369,17 @@ onBeforeUnmount(() => clearInterval(timer))
       <h2 class="ys-card-title">同步历史 · {{ selected.name }}</h2>
       <span class="note">共 {{ jobsTotal }} 次，保留最近 50 次</span>
     </div>
+  <details v-if="scopes.length" class="scope-health">
+    <summary>各地域 / 类型最近采集结果（含空清单）</summary>
+    <el-table :data="scopes" size="small" max-height="340" style="margin-top: 12px">
+      <el-table-column label="类型" width="110"><template #default="{ row }">{{ row.type === 'metrics' ? 'CPU 指标' : typeLabel[row.type as keyof typeof typeLabel] }}</template></el-table-column>
+      <el-table-column prop="region" label="地域" width="170"><template #default="{ row }">{{ row.region || '全局' }}</template></el-table-column>
+      <el-table-column label="结果" width="100"><template #default="{ row }">{{ row.status === 'skipped' ? '不支持，跳过' : row.status === 'failed' ? '失败' : '成功' }}</template></el-table-column>
+      <el-table-column label="最近成功" width="165"><template #default="{ row }">{{ row.last_success_at ? dayjs(row.last_success_at).format('MM-DD HH:mm:ss') : '尚无成功记录' }}</template></el-table-column>
+      <el-table-column label="最近尝试" width="165"><template #default="{ row }">{{ dayjs(row.last_attempt_at).format('MM-DD HH:mm:ss') }}</template></el-table-column>
+      <el-table-column prop="error" label="错误" min-width="230" />
+    </el-table>
+  </details>
     <div v-if="jobs.length" class="jobs">
       <div v-for="j in jobs" :key="j.id" class="job">
         <div class="job-line">
@@ -420,6 +437,8 @@ onBeforeUnmount(() => clearInterval(timer))
 </template>
 
 <style scoped>
+.scope-health { padding: 12px 20px; color: var(--ys-text-label); }
+.scope-health summary { cursor: pointer; }
 .add-btn {
   height: 38px;
 }

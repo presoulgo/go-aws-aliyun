@@ -32,6 +32,7 @@ const actions: { value: ActionFilter; label: string }[] = [
   { value: 'created', label: '新增' },
   { value: 'updated', label: '变更' },
   { value: 'deleted', label: '删除' },
+  { value: 'left_idle', label: '退出闲置清单' },
 ]
 const types = Object.keys(typeLabel) as ResourceType[]
 
@@ -131,7 +132,7 @@ function time(t: string): string {
 
 // 资源中心只有四类核心资源，闲置云盘和 EIP 在成本优化页。
 function resourceLink(c: ResourceChange) {
-  if (c.action === 'deleted') return null
+  if (c.action === 'deleted' || c.action === 'left_idle') return null
   if (c.type === 'disk' || c.type === 'eip') return { path: '/optimize', query: { kind: c.type } }
   return { path: '/resources', query: { type: c.type, q: c.resource_id } }
 }
@@ -209,7 +210,7 @@ const emptyText = computed(() =>
           <ul v-if="row.changes.length" class="diff">
             <li v-for="c in row.changes" :key="c.field">{{ changeText(c) }}</li>
           </ul>
-          <span v-else class="sub-muted">{{ row.action === 'created' ? '同步时首次发现' : row.action === 'deleted' ? '同步时已不存在' : '—' }}</span>
+          <span v-else class="sub-muted">{{ row.action === 'created' ? '同步时首次发现' : row.action === 'left_idle' ? '已不在闲置清单中，可能已挂载、绑定或释放' : row.action === 'deleted' ? '同步时已不存在' : '—' }}</span>
         </template>
       </el-table-column>
       <template #empty>

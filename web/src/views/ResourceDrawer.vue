@@ -355,7 +355,9 @@ const info = computed(() => {
     { k: '创建时间', v: formatDateTime(d.cloud_created_at) },
     { k: '首次发现', v: formatDateTime(d.created_at) },
     { k: '最后同步', v: formatDateTime(d.synced_at) },
+    { k: '数据状态', v: d.data_stale ? '采集失败或数据过期，等待更新' : '已同步' },
   )
+  if (d.type === 'vm') rows.push({ k: 'CPU 样本时间', v: `${formatDateTime(d.metrics_at)}${d.metrics_stale ? '（不可用或已过期）' : ''}` })
   return rows
 })
 
@@ -513,7 +515,7 @@ function compare() {
                   <template v-if="c.changes.length">
                     <span v-for="f in c.changes" :key="f.field" class="history-line">{{ changeText(f) }}</span>
                   </template>
-                  <span v-else class="history-line muted">{{ c.action === 'created' ? '同步时首次发现' : '同步时已不存在' }}</span>
+                  <span v-else class="history-line muted">{{ c.action === 'created' ? '同步时首次发现' : c.action === 'left_idle' ? '退出闲置清单，可能已挂载、绑定或释放' : '同步时已不存在' }}</span>
                 </span>
               </li>
             </ol>

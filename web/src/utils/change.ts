@@ -7,6 +7,7 @@ export const actionInfo: Record<ChangeAction, { label: string; tone: Tone }> = {
   created: { label: '新增', tone: 'ok' },
   updated: { label: '变更', tone: 'busy' },
   deleted: { label: '删除', tone: 'err' },
+  left_idle: { label: '退出闲置清单', tone: 'ok' },
 }
 
 const fieldLabels: Record<string, string> = {

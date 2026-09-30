@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/presoulgo/go-aws-aliyun/internal/cloud"
 	"github.com/presoulgo/go-aws-aliyun/internal/model"
@@ -36,15 +37,16 @@ func (l *sentLog) take() []notify.Message {
 }
 
 func TestAlertFireResolveAndNotify(t *testing.T) {
+	hour := time.Now().Truncate(time.Hour).Unix()
 	fp := &fakeProvider{
 		regions: []string{"r1"},
 		data: map[string][]cloud.Resource{
 			"vm|r1": {vm("a", "r1"), vm("b", "r1"), vm("c", "r1")},
 		},
 		cpu: map[string]cloud.CPUStat{
-			"a": {Hourly: map[int64]float64{0: 95}},
-			"b": {Hourly: map[int64]float64{0: 97}},
-			"c": {Hourly: map[int64]float64{0: 20}},
+			"a": {Hourly: map[int64]float64{hour: 95}},
+			"b": {Hourly: map[int64]float64{hour: 97}},
+			"c": {Hourly: map[int64]float64{hour: 20}},
 		},
 	}
 	env := newSyncEnv(t, fp)
@@ -108,7 +110,7 @@ func TestAlertFireResolveAndNotify(t *testing.T) {
 
 	// Sync 3: a cools down → resolved message; delivery fails and is recorded.
 	fp.mu.Lock()
-	fp.cpu["a"] = cloud.CPUStat{Hourly: map[int64]float64{0: 10}}
+	fp.cpu["a"] = cloud.CPUStat{Hourly: map[int64]float64{hour: 10}}
 	fp.mu.Unlock()
 	log.fail = true
 	env.runSync(t, acc.ID)

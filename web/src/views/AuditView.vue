@@ -115,6 +115,8 @@ const actionLabel: Record<string, string> = {
   user_reset_password: '重置密码',
   password_change: '修改密码',
   alert_rule_update: '修改告警规则',
+  alert_event_handle: '处理告警',
+  alert_notify_retry: '重发告警通知',
   channel_create: '新增通知渠道',
   channel_update: '修改通知渠道',
   channel_delete: '删除通知渠道',
